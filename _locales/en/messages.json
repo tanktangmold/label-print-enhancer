@@ -1,0 +1,11 @@
+{
+  "appName": {
+    "message": "Label Print Enhancer"
+  },
+  "appDesc": {
+    "message": "Redraws shipping-label PDFs (Japan Post, Yamato, Sagawa, 4×6…) onto your label size so Chrome's print preview prints them right. Visual area selection and named print profiles."
+  },
+  "actionTitle": {
+    "message": "Open the current PDF in Label Print Enhancer"
+  }
+}

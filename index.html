@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Label Print Enhancer — stop Chrome from cutting off your shipping labels</title>
+  <meta name="description" content="Re-lays shipping-label PDFs (Japan Post, Yamato, Sagawa, 4×6, China e-waybills) onto your label size so Chrome's print preview prints them right. Free, open source, runs in your browser.">
+  <link rel="icon" href="icons/32.png">
+  <link rel="stylesheet" href="site.css">
+  <script type="module" src="site.js"></script>
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="./"><img src="icons/48.png" alt="" width="28" height="28"><span data-i18n="app.name">Label Print Enhancer</span></a>
+    <div class="nav-right">
+      <a href="https://github.com/tanktangmold/label-print-enhancer" class="nav-link">GitHub</a>
+      <label><span class="visually-hidden" data-i18n="lang.label">Language</span><select id="lang"></select></label>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1 data-i18n="site.title">Label Print Enhancer — stop Chrome from cutting off your shipping labels</h1>
+      <p class="lead" data-i18n="site.lead"></p>
+      <div class="cta">
+        <a class="btn primary" href="viewer.html#demo" data-i18n="site.cta.try">Try it online</a>
+        <a class="btn" href="https://github.com/tanktangmold/label-print-enhancer/releases/latest" data-i18n="site.cta.install">Download the extension</a>
+      </div>
+    </section>
+
+    <section class="compare">
+      <figure>
+        <figcaption class="bad" data-i18n="site.before"></figcaption>
+        <img src="docs/images/preview-before.png" alt="" loading="lazy" width="2000" height="1320">
+      </figure>
+      <figure>
+        <figcaption class="good" data-i18n="site.after"></figcaption>
+        <img src="docs/images/preview-after.png" alt="" loading="lazy" width="2000" height="1320">
+      </figure>
+      <p class="caption" data-i18n="site.caption"></p>
+    </section>
+
+    <section>
+      <h2 data-i18n="site.visual.title"></h2>
+      <p class="section-lead" data-i18n="site.visual.body"></p>
+      <div class="compare gallery">
+        <figure>
+          <figcaption data-i18n="mode.select"></figcaption>
+          <img src="docs/images/select-area.png" alt="" loading="lazy" width="1400" height="950">
+        </figure>
+        <figure>
+          <figcaption data-i18n="mode.arrange"></figcaption>
+          <img src="docs/images/arrange.png" alt="" loading="lazy" width="1400" height="950">
+        </figure>
+      </div>
+    </section>
+
+    <section class="explain">
+      <div>
+        <h2 data-i18n="site.problem.title"></h2>
+        <p data-i18n="site.problem.body"></p>
+      </div>
+      <div>
+        <h2 data-i18n="site.fix.title"></h2>
+        <p data-i18n="site.fix.body"></p>
+      </div>
+    </section>
+
+    <section>
+      <h2 data-i18n="site.features.title"></h2>
+      <ul class="features">
+        <li data-i18n="site.feat.1"></li>
+        <li data-i18n="site.feat.2"></li>
+        <li data-i18n="site.feat.3"></li>
+        <li data-i18n="site.feat.4"></li>
+        <li data-i18n="site.feat.5"></li>
+        <li data-i18n="site.feat.6"></li>
+      </ul>
+    </section>
+
+    <section class="install">
+      <h2 data-i18n="site.install.title"></h2>
+      <ol>
+        <li data-i18n="site.install.1"></li>
+        <li data-i18n="site.install.2"></li>
+        <li data-i18n="site.install.3"></li>
+      </ol>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/tanktangmold/label-print-enhancer/releases/latest" data-i18n="site.cta.install"></a>
+        <a class="btn" href="viewer.html#demo" data-i18n="site.cta.try"></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot"><span data-i18n="site.footer"></span> · <a href="https://github.com/tanktangmold/label-print-enhancer">GitHub</a></footer>
+</body>
+</html>
