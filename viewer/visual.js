@@ -160,13 +160,37 @@ export function createVisualEditor({ getState, applyPatch, onError }) {
     return { box: r.box, guides: { x: r.centeredX, y: r.centeredY } };
   }
 
+  /**
+   * 整页（没框选）的内容框往往比纸大得多（A4 放在 100×150 纸上），四角拖不到还会盖住按钮。
+   * 进入拖动调整前先把框收紧到识别出的内容区域，位置和比例不变，打印效果一样。
+   * 自动适配模式同理：换算成「比例 + 边距」，框就是自动适配算出来的位置。
+   */
+  async function tightenToContent(token) {
+    const { settings } = getState();
+    if (settings.crop && settings.fitMode !== 'auto') return;
+    const crop = settings.crop ?? (await proposeCrop());
+    if (!crop || token !== seq) return;
+    let box;
+    if (settings.fitMode === 'auto') {
+      box = fitBoxToPaper({ x: 0, y: 0, w: ptToMm(crop.w), h: ptToMm(crop.h) }, paperMm(settings), settings.autoPadding);
+    } else {
+      const whole = contentBoxOnPaper(settings, sourceRect(settings, src.w, src.h));
+      const k = whole.w / src.w; // mm / pt
+      box = { x: whole.x + crop.x * k, y: whole.y + crop.y * k, w: crop.w * k, h: crop.h * k };
+    }
+    applyPatch({ crop, ...settingsFromBox(crop, box) });
+  }
+
   async function enterArrange(token) {
-    const { pdf, page, settings } = getState();
-    src = await sourceSize(pdf, page, settings);
+    const { pdf, page } = getState();
+    src = await sourceSize(pdf, page, getState().settings);
+    if (token !== seq) return;
+    await tightenToContent(token);
     if (token !== seq) return;
     await ensureLayer(token);
     if (token !== seq) return;
     paperStage.classList.add('arranging');
+    const { settings } = getState();
     const box = contentBoxOnPaper(settings, sourceRect(settings, src.w, src.h));
     placeLayer(box);
     editor = createBoxEditor({

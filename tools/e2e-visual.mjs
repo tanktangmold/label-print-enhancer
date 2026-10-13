@@ -40,9 +40,64 @@ try {
   await v.evaluate(`(() => { const s = document.getElementById('lang'); s.value = 'en'; s.dispatchEvent(new Event('change')); })()`);
   await waitFor(() => v.evaluate(`!!document.querySelector('#paperWrap canvas.baked')`), 20000, '示例预览');
 
+  // ⓪ 用户反馈的情形：自定义 100×150 纸、整页（没框选）、倍率 94.9%，直接进「拖动调整」
+  const setField = (id, value) => v.evaluate(`(() => { const el = document.getElementById('${id}'); el.value = '${value}'; el.dispatchEvent(new Event('change', { bubbles: true })); })()`);
+  await setField('paper', 'custom');
+  await setField('paperW', '100');
+  await setField('paperH', '150');
+  await setField('scale', '94.9');
+  await sleep(1200);
+  const inkBox = () => v.evaluate(`(() => {
+    const c = document.querySelector('#paperWrap canvas.baked');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let x0 = c.width, y0 = c.height;
+    for (let y = 0; y < c.height; y += 2) for (let x = 0; x < c.width; x += 2) if (d[(y * c.width + x) * 4] < 128) { if (x < x0) x0 = x; if (y < y0) y0 = y; }
+    const dpi = window.__lpe.getState().settings.dpi;
+    return { left: +(x0 / dpi * 25.4).toFixed(2), top: +(y0 / dpi * 25.4).toFixed(2) };
+  })()`);
+  const inkBefore = await inkBox();
+  await v.evaluate(`document.querySelector('#stageTools [data-view="arrange"]').click()`);
+  await waitFor(() => v.evaluate(`document.getElementById('stage').dataset.view === 'arrange' && !!document.querySelector('#paperStage .edit-box:not([hidden])')`), 15000, '拖动调整（整页）');
+  await sleep(500);
+  const tight = await v.evaluate(`(() => {
+    const s = window.__lpe.getState().settings;
+    const box = document.querySelector('#paperStage .edit-box').getBoundingClientRect();
+    const paper = document.getElementById('paperStage').getBoundingClientRect();
+    return { crop: s.crop, ratioW: box.width / paper.width, ratioH: box.height / paper.height };
+  })()`);
+  check('整页直接进入调整：选框自动收紧到标签（不再比纸大一大圈）', !!tight.crop && tight.ratioW < 1.2 && tight.ratioH < 1.2, JSON.stringify(tight));
+  const clickable = (ids) => v.evaluate(`${JSON.stringify(ids)}.map((id) => {
+    const el = id.startsWith('#') ? document.querySelector(id) : document.getElementById(id);
+    const r = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    return el === hit || el.contains(hit);
+  })`);
+  const BUTTONS = ['btnCenter', 'btnFit', 'btnArrangeDone', '#stageTools [data-view="preview"]', 'next'];
+  let hits = await clickable(BUTTONS);
+  check('工具条在上方、按钮没被选框挡住', hits.every(Boolean), JSON.stringify(hits));
+  const barTop = await v.evaluate(`document.getElementById('editBar').getBoundingClientRect().top < document.getElementById('paperStage').getBoundingClientRect().top`);
+  check('编辑工具条位于纸张上方', barTop);
+  // 极端情况：内容放大到 400%，选框远超纸张，按钮仍然点得到
+  await setField('scale', '400');
+  await sleep(800);
+  hits = await clickable(BUTTONS);
+  check('内容放大到 400%：按钮仍然点得到', hits.every(Boolean), JSON.stringify(hits));
+  await setField('scale', '94.9');
+  await sleep(500);
+  // 用真实鼠标点「完成」→ 回到预览；打印位置和收紧前一致
+  const done = await rectOf('#btnArrangeDone');
+  await mouse('mousePressed', done.x + done.w / 2, done.y + done.h / 2);
+  await mouse('mouseReleased', done.x + done.w / 2, done.y + done.h / 2);
+  await waitFor(() => v.evaluate(`document.getElementById('stage').dataset.view === 'preview'`), 5000, '点完成回到预览');
+  await sleep(1500);
+  const inkAfter = await inkBox();
+  check('收紧选框不改变打印位置', Math.abs(inkAfter.left - inkBefore.left) < 0.3 && Math.abs(inkAfter.top - inkBefore.top) < 0.3, `${JSON.stringify(inkBefore)} → ${JSON.stringify(inkAfter)}`);
+  await click('btnReset');
+  await sleep(1200);
+
   // ① 框选视图：自动识别出内容区域
   await v.evaluate(`document.querySelector('#stageTools [data-view="select"]').click()`);
-  await waitFor(() => v.evaluate(`!!document.querySelector('#sourceWrap canvas') && !document.querySelector('#sourceWrap .edit-box').hidden`), 15000, '框选视图');
+  await waitFor(() => v.evaluate(`!!document.querySelector('#sourceWrap canvas') && document.querySelector('#sourceWrap .edit-box')?.hidden === false`), 15000, '框选视图');
   const detected = (await settings()).crop;
   check('进入框选：自动识别出标签区域作为初始选区', !!detected && detected.w > 200 && detected.w < 320 && detected.y < 40, JSON.stringify(detected));
 

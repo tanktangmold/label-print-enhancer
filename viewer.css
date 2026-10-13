@@ -199,3 +199,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 :root:lang(ja) { font-family: "Yu Gothic UI", "Yu Gothic", Meiryo, "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
 :root:lang(zh-CN) { font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", system-ui, sans-serif; }
 :root:lang(en) { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
+
+/* 编辑时选框可能超出纸张：所有控件压在选框上面，点击不会被框截走 */
+.stage-tools, .edit-bar, .edit-hint, .paper-tag, .pager, .message { position: relative; z-index: 5; }
+.message { position: absolute; }
+.edit-layer { z-index: 1; }
+.edit-hint { background: var(--stage); padding: 0 6px; border-radius: 4px; }
