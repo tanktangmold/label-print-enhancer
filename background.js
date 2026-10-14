@@ -1,6 +1,9 @@
 // 后台：① 日本邮政送り状 PDF 打开时自动换成标签排版页 ② 点工具栏图标用排版页打开当前 PDF
 import { loadSettings, consumeBypass } from './core/storage.js';
 import { handleGeneratedFetch } from './core/output.js';
+import { CODE_VERSION } from './core/version.js';
+
+const REOPEN_KEY = 'reopenAfterReload';
 
 const JP_POST_HOST = 'jpo-prd-tokyo-app-front.s3.ap-northeast-1.amazonaws.com';
 
@@ -40,6 +43,27 @@ chrome.webNavigation.onCommitted.addListener((details) => {
 
 // 排版后的 PDF 由这里按扩展自己的地址提供：blob: 地址的 PDF 在 iframe 里算跨源，没法直接调打印
 self.addEventListener('fetch', handleGeneratedFetch);
+
+// 排版页问后台版本（对不上就提示重新加载扩展）
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (sender.id !== chrome.runtime.id || msg?.type !== 'lpe-version') return false;
+  sendResponse({ version: CODE_VERSION });
+  return false;
+});
+
+// 排版页点「重新加载扩展」前记下自己的地址，扩展重载后把它打开（只认本扩展的排版页地址）。
+// 后台是按需唤醒的：重载会触发 onInstalled（reason=update），靠它把后台叫起来。
+async function reopenAfterReload() {
+  const got = await chrome.storage.local.get(REOPEN_KEY);
+  const url = got[REOPEN_KEY];
+  if (!url) return;
+  await chrome.storage.local.remove(REOPEN_KEY);
+  if (typeof url === 'string' && url.startsWith(chrome.runtime.getURL('viewer.html'))) await chrome.tabs.create({ url });
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  reopenAfterReload().catch((err) => console.error('[label-print] reopen after reload failed', err));
+});
 
 chrome.action.onClicked.addListener(async (tab) => {
   const src = tab?.url && /^(https?|file):/i.test(tab.url) ? tab.url : '';

@@ -7,7 +7,7 @@ import { openPdf, renderLabelPage, buildLabelPdf, isCancelled, releaseCanvas } f
 import { fetchPdfBytes, readFileBytes, requestOrigins } from './source.js';
 import { fillPaperOptions, fillLangOptions, writeForm, readForm, syncVisibility, onFormChange, paperLabel } from './form.js';
 import { showMessage, hideMessage, errorText } from './message.js';
-import { printPdf } from './printer.js';
+import { printPdf, backgroundIsCurrent } from './printer.js';
 import { createVisualEditor } from './visual.js';
 import { createProfilesUI } from './profiles-ui.js';
 import { applyProfile } from '../core/profiles.js';
@@ -385,6 +385,21 @@ function setupPlatform() {
   if (!IS_EXTENSION) ensureOutputServer().catch((err) => console.warn('[label-print] service worker unavailable', err));
 }
 
+/** 扩展更新后后台没重新加载：提示并给「重新加载扩展」按钮（重新加载后自动打开本页）。 */
+async function warnIfStale() {
+  if (!IS_EXTENSION || (await backgroundIsCurrent())) return;
+  showMessage('error', t('ext.stale'), [
+    {
+      label: t('btn.reloadExt'),
+      primary: true,
+      onClick: async () => {
+        await chrome.storage.local.set({ reopenAfterReload: location.href });
+        chrome.runtime.reload();
+      },
+    },
+  ]);
+}
+
 async function init() {
   profilesUI = createProfilesUI({
     getSettings: () => state.settings,
@@ -410,9 +425,10 @@ async function init() {
   let src = params.has('demo') && !IS_EXTENSION ? assetUrl(SAMPLE_PDF) : params.get('src');
   // 网页版不接受别的网站的地址（防止有人用本站页面展示他人的 PDF）
   if (src && !IS_EXTENSION && new URL(src, location.href).origin !== location.origin) src = null;
-  if (!src) return;
+  if (!src) return warnIfStale();
   const loaded = await loadFromUrl(src);
   if (loaded && autoPrint && state.settings.autoPrint && state.srcUrl === src) doPrint();
+  await warnIfStale();
 }
 
 const ready = init().catch((err) => {

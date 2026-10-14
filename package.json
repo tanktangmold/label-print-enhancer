@@ -1,6 +1,6 @@
 {
   "name": "label-print-enhancer",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Chrome extension + web app that redraws shipping-label PDFs onto your label size so Chrome's print preview prints them right",
   "scripts": {
     "test": "node --test tests/*.test.mjs",

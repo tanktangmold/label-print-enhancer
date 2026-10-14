@@ -115,6 +115,7 @@ Settings and profiles are saved locally (`chrome.storage` in the extension, `loc
 
 ## Troubleshooting
 
+- **“The extension files were updated, but its background is still running the old version”**: after updating the unpacked folder in place, click **Reload extension** (or the reload icon in `chrome://extensions`). The page reopens automatically. Until then, Print opens the re-laid-out PDF in a new tab so you can still print it with Ctrl+P.
 - **“Server returned 403”**: the PDF link has expired or needs a login. Click **Open in Chrome's PDF viewer** or reopen the label from the original site.
 - **“Permission is needed to read files from …”**: click **Allow and retry**. Chrome asks once per site.
 - **Local PDFs**: drop them onto the page.

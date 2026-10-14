@@ -169,3 +169,10 @@ test('界面语言设置只接受 auto/zh/en/ja', () => {
   assert.equal(normalizeSettings({ lang: 'ja' }).lang, 'ja');
   assert.equal(normalizeSettings({ lang: 'fr' }).lang, 'auto');
 });
+
+test('代码版本和 manifest 版本一致（排版页靠它判断后台是不是旧代码）', async () => {
+  const { CODE_VERSION } = await import('../core/version.js');
+  const { readFileSync } = await import('node:fs');
+  const manifest = JSON.parse(readFileSync(new URL('../manifest.json', import.meta.url), 'utf8'));
+  assert.equal(CODE_VERSION, manifest.version);
+});

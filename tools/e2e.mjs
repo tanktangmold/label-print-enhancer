@@ -1,7 +1,7 @@
 // 端到端实测：用 Chrome for Testing（无头、独立用户目录，不碰日常 Chrome）加载扩展，跑排版页。
 // 用法：node tools/e2e.mjs [--chrome <chrome.exe>] [--shots <截图目录>]
 import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -250,6 +250,47 @@ async function main() {
     // 只放过测试④里故意制造的 S3 403；其他任何报错（包括 /generated/ 404）都算失败
     const relevant = errors.filter((e) => !(/failed to load PDF/.test(String(e)) || (/403/.test(String(e)) && /jpo-prd-tokyo-app-front/.test(String(e)))));
     check('页面无意外报错', relevant.length === 0, relevant.slice(0, 3).join(' | '));
+
+    // ⑤ 后台版本自检：同版本时不提示
+    const ok = await openPage(`${base}/viewer.html#src=${encodeURIComponent(`${base}/tests/fixtures/a4-label.pdf`)}`);
+    await ok.ready();
+    await sleep(800);
+    const ver = await ok.evaluate(`chrome.runtime.sendMessage({ type: 'lpe-version' }).then((r) => r.version)`);
+    const okMsg = await ok.evaluate(`document.getElementById('message').hidden ? '' : document.getElementById('message').textContent`);
+    check('后台版本一致时不提示重新加载', ver === JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf8')).version && !okMsg.includes('重新加载'), `${ver} ${okMsg}`);
+
+    // ⑥ 排版文件取不到（模拟后台找不到文件）→ 自动在新标签打开排版后的 PDF
+    const before = new Set((await cdp.send('Target.getTargets')).targetInfos.map((x) => x.targetId));
+    await ok.evaluate(`(() => { const put = IDBObjectStore.prototype.put; IDBObjectStore.prototype.put = function (v, k) { return put.call(this, v, 'generated/elsewhere.pdf'); }; document.getElementById('btnPrint').click(); })()`);
+    const blobTab = await waitFor(async () => (await cdp.send('Target.getTargets')).targetInfos.find((x) => !before.has(x.targetId) && x.url.startsWith('blob:chrome-extension://')), 20000, '退路：新标签打开 PDF');
+    const fbMsg = await ok.evaluate(`document.getElementById('message').textContent`);
+    check('打印文件取不到：自动在新标签打开排版后的 PDF 并提示', !!blobTab && fbMsg.includes('新标签'), fbMsg.slice(0, 60));
+    await cdp.send('Target.closeTarget', { targetId: blobTab.targetId });
+
+    // 和用户一样打开「开发者模式」（加载已解压的扩展必须开）；不开的话测试浏览器里扩展一重载就被停用
+    const mgr = await openPage('chrome://extensions/');
+    await sleep(1000);
+    await mgr.evaluate('chrome.developerPrivate.updateProfileConfiguration({ inDeveloperMode: true })');
+
+    // ⑦ 模拟「改了文件没重新加载扩展」：后台回旧版本号 → 提示 + 重新加载按钮；点了以后扩展重载、本页自动重新打开
+    const { targetId: staleId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
+    const { sessionId: staleSid } = await cdp.send('Target.attachToTarget', { targetId: staleId, flatten: true });
+    await cdp.send('Page.enable', {}, staleSid);
+    await cdp.send('Runtime.enable', {}, staleSid);
+    await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: "chrome.runtime.sendMessage = async () => ({ version: '0.0.1' });" }, staleSid);
+    const staleUrl = `${base}/viewer.html#src=${encodeURIComponent(`${base}/tests/fixtures/a4-label.pdf`)}`;
+    await cdp.send('Page.navigate', { url: staleUrl }, staleSid);
+    const evalStale = async (expression) => (await cdp.send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }, staleSid)).result.value;
+    await waitFor(() => evalStale(`!document.getElementById('message').hidden && document.getElementById('message').textContent.includes('旧版本')`), 15000, '旧后台提示');
+    const btns2 = await evalStale(`[...document.querySelectorAll('#message button')].map((b) => b.textContent)`);
+    check('后台是旧版本：提示并给「重新加载扩展」按钮', btns2.includes('重新加载扩展'), btns2.join(' / '));
+    const beforeReload = new Set((await cdp.send('Target.getTargets')).targetInfos.map((x) => x.targetId));
+    await evalStale(`[...document.querySelectorAll('#message button')].find((b) => b.textContent === '重新加载扩展').click()`);
+    const reopened = await waitFor(async () => {
+      const { targetInfos } = await cdp.send('Target.getTargets');
+      return targetInfos.find((x) => !beforeReload.has(x.targetId) && x.type === 'page' && x.url.startsWith(`${base}/viewer.html`));
+    }, 20000, '重新加载后自动重开排版页');
+    check('点「重新加载扩展」：扩展重载并自动重新打开本页', !!reopened && reopened.url.includes('a4-label.pdf'), reopened?.url.slice(0, 90));
   } finally {
     chrome.kill();
     await sleep(500);

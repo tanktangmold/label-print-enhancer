@@ -1,7 +1,8 @@
 // 把排版后的 PDF 交给 Chrome 自带打印预览：存进本地 → 隐藏 iframe 按扩展地址加载 → 调 print()。
 import { stageOutput } from '../core/output.js';
 import { t } from '../core/i18n.js';
-import { ensureOutputServer } from '../core/platform.js';
+import { ensureOutputServer, IS_EXTENSION } from '../core/platform.js';
+import { CODE_VERSION } from '../core/version.js';
 
 const PRINT_DELAY_MS = 600; // 等 PDF 查看器初始化完
 const LOAD_TIMEOUT_MS = 20_000;
@@ -35,13 +36,27 @@ function frameProblem(frame) {
  * 弹出 Chrome 打印预览。调完 print() 才结束（期间调用方应保持「忙」状态，避免连点）。
  * 返回扩展内的文件地址；直接打印失败时抛错，错误上带 path 供新标签打开。
  */
-export async function printPdf(bytes) {
-  if (!(await ensureOutputServer())) {
-    // 退路：新标签打开（页面已和纸张同尺寸，在那里直接 Ctrl+P 也是对的）
-    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
-    setTimeout(() => URL.revokeObjectURL(url), 10 * 60_000);
-    throw Object.assign(new Error(t('print.noSw')), { path: url });
+/** 后台 service worker 是否和本页同一版代码（旧版后台不认这条消息，也算不一致）。 */
+export async function backgroundIsCurrent() {
+  if (!IS_EXTENSION) return true;
+  try {
+    const reply = await chrome.runtime.sendMessage({ type: 'lpe-version' });
+    return reply?.version === CODE_VERSION;
+  } catch {
+    return false;
   }
+}
+
+/** 退路：在新标签打开排版后的 PDF（页面已和纸张同尺寸，在那里直接 Ctrl+P 也是对的）。 */
+function fallbackError(bytes, message) {
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+  setTimeout(() => URL.revokeObjectURL(url), 10 * 60_000);
+  return Object.assign(new Error(message), { path: url });
+}
+
+export async function printPdf(bytes) {
+  if (!(await ensureOutputServer())) throw fallbackError(bytes, t('print.noSw'));
+  if (!(await backgroundIsCurrent())) throw fallbackError(bytes, t('ext.stalePrint'));
   const path = await stageOutput(bytes);
   document.querySelector('iframe.print-frame')?.remove();
   const frame = document.createElement('iframe');
@@ -56,7 +71,7 @@ export async function printPdf(bytes) {
   if (!frame.isConnected) return path;
 
   const problem = frameProblem(frame);
-  if (problem) throw new Error(t('print.cannotOpen', { detail: problem }));
+  if (problem) throw fallbackError(bytes, t('print.cannotOpen', { detail: problem }));
   try {
     frame.contentWindow.focus();
     frame.contentWindow.print();
