@@ -29,14 +29,14 @@
     <aside class="panel" id="panel">
       <section class="group">
         <h2 data-i18n="sec.profile"></h2>
-        <select id="profile"></select>
+        <select id="profile" data-ui-only></select>
         <div class="row profile-actions">
           <button type="button" class="btn small" id="btnProfileSave" data-i18n="profile.save"></button>
           <button type="button" class="btn small" id="btnProfileSaveAs" data-i18n="profile.saveAs"></button>
           <button type="button" class="btn small" id="btnProfileDelete" data-i18n="profile.delete"></button>
         </div>
         <div class="row" id="profileNameRow" hidden>
-          <input type="text" id="profileName" maxlength="60" data-i18n-placeholder="profile.namePlaceholder">
+          <input type="text" id="profileName" maxlength="60" data-ui-only data-i18n-placeholder="profile.namePlaceholder">
           <button type="button" class="btn small primary-soft" id="btnProfileNameOk" data-i18n="profile.ok"></button>
           <button type="button" class="btn small" id="btnProfileNameCancel" data-i18n="profile.cancel"></button>
         </div>

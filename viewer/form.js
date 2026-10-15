@@ -82,7 +82,8 @@ export function readForm(base) {
  * 表单变化回调：输入中（input）只更新设置；失焦/选择（change）后再把校验后的值写回表单。
  */
 export function onFormChange(panel, callback) {
-  const isSetting = (e) => e.target instanceof HTMLElement && e.target.type !== 'file';
+  // 选文件、打印方案下拉框、方案名输入框不是排版设置，各自有处理
+  const isSetting = (e) => e.target instanceof HTMLElement && e.target.type !== 'file' && !e.target.closest('[data-ui-only]');
   panel.addEventListener('input', (e) => isSetting(e) && callback({ committed: false }));
   panel.addEventListener('change', (e) => isSetting(e) && callback({ committed: true }));
 }

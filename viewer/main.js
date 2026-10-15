@@ -10,7 +10,6 @@ import { showMessage, hideMessage, errorText } from './message.js';
 import { printPdf, backgroundIsCurrent } from './printer.js';
 import { createVisualEditor } from './visual.js';
 import { createProfilesUI } from './profiles-ui.js';
-import { applyProfile } from '../core/profiles.js';
 
 const $ = (id) => document.getElementById(id);
 const RENDER_KEYS = ['paperW', 'paperH', 'fitMode', 'scale', 'marginTop', 'marginLeft', 'align', 'autoPadding', 'rotate', 'dpi', 'mono', 'threshold', 'crop'];
@@ -139,9 +138,18 @@ function goPage(n) {
 
 // ---------- 设置 ----------
 
+/** 立刻写入还没保存的设置（选方案后、关页面前）。 */
+function flushSave() {
+  if (!saveTimer) return;
+  clearTimeout(saveTimer);
+  saveTimer = 0;
+  saveSettings(state.settings).catch((err) => console.error('[label-print] save settings failed', err));
+}
+
 function persist(next) {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
+    saveTimer = 0;
     saveSettings(next).catch((err) => showMessage('error', t('error.saveSettings', { err: errorText(err) })));
   }, 300);
 }
@@ -403,13 +411,17 @@ async function warnIfStale() {
 async function init() {
   profilesUI = createProfilesUI({
     getSettings: () => state.settings,
-    onApply: (next) => applySettings(next, { committed: true }),
+    onApply: (next) => {
+      applySettings(next, { committed: true });
+      flushSave();
+    },
     notify: (kind, text) => showMessage(kind, text),
   });
-  let settings = await loadSettings();
-  const profile = await profilesUI.init();
-  if (profile) settings = applyProfile(settings, profile); // 默认方案：上次选中的方案
+  // 沿用上次用的设置（含上次选的方案和之后没点「保存」的改动），不再用方案覆盖；方案下拉框只显示是哪个方案、有没有改过
+  const settings = await loadSettings();
   setState({ settings });
+  await profilesUI.init();
+  window.addEventListener('pagehide', flushSave);
   visual = createVisualEditor({
     getState: () => ({ pdf: state.pdf, page: state.page, settings: state.settings }),
     applyPatch,

@@ -30,7 +30,7 @@ No combination of Chrome's built-in settings avoids step 2. This tool redraws ev
 - Opens Japan Post label PDFs automatically (extension) and lays them out on your label size
 - 19 paper presets: Japan Post, Yamato, Sagawa, 4×6 in, 100×150 mm, China e-waybills, A4/A5/A6, B5/B6, Letter, postcard, plus custom sizes
 - **Visual selection:** draw a box around the part of the page to print, then move and resize it on the paper with live coordinates and snap-to-center
-- **Print profiles:** save your settings under a name; the selected profile is used automatically next time
+- **Print profiles:** save settings under a name and switch in one click; your last-used settings are kept for next time
 - Custom scale and margins (top-left or centered), or **auto crop & fit** that finds the printed area and fills the label
 - Rotation, resolution (203–600 dpi) and **pure black & white** output tuned for thermal printers
 - Live preview of exactly what will be printed, page by page
@@ -78,7 +78,7 @@ The paper size must exist in your printer driver. If it doesn't, add it in the d
 
 ### Print profiles
 
-Once the layout is right, click **Save as…** under **Print profile** and give it a name (for example “Yu-Packet label”). The selected profile is applied automatically the next time you open Label Print Enhancer. If you change a setting, the panel shows *Modified* and **Save** updates the profile. Profiles store the paper, layout, print area, rotation and image settings; the UI language and automation options stay global.
+Once the layout is right, click **Save as…** under **Print profile** and give it a name (for example “Yu-Packet label”). Picking a profile applies it. Your last-used settings — including the selected profile and any changes you made afterwards — are kept for next time; the panel shows *Modified* when they differ from the profile, and **Save** writes them into it. Pick the profile again to go back to its saved state. Profiles store the paper, layout, print area, rotation and image settings; the UI language and automation options stay global.
 
 ## Paper presets
 
@@ -135,6 +135,7 @@ npm test           # unit tests (layout math, settings validation, i18n complete
 npm run e2e        # extension end-to-end test in Chrome for Testing (headless)
 npm run e2e:web    # web version end-to-end test (local server with the GitHub Pages sub-path)
 npm run e2e:visual # visual selection, move/resize, snap-to-center and print profiles with real mouse events
+npm run e2e:profiles # switching profiles, keeping last-used settings across reloads
 npm run pages:serve   # preview the web version at http://127.0.0.1:8799/label-print-enhancer/
 npm run pack       # build dist/label-print-enhancer-vX.Y.Z.zip for a release
 ```
