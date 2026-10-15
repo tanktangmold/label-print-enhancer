@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Label Print Enhancer</title>
+  <link rel="icon" href="icons/32.png">
+  <link rel="stylesheet" href="viewer.css">
+  <script type="module" src="viewer/main.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><img src="icons/32.png" alt=""><span data-i18n="app.name">Label Print Enhancer</span></div>
+    <div class="doc" id="docName" data-i18n="doc.none">No file open</div>
+    <label class="lang"><span class="visually-hidden" data-i18n="lang.label">Language</span>
+      <select id="lang"></select>
+    </label>
+    <button id="btnReset" class="link" type="button" data-i18n="btn.reset">Reset to defaults</button>
+  </header>
+
+  <div class="demo-bar" data-web-only hidden>
+    <span data-i18n="demo.banner"></span>
+    <button type="button" class="link strong" id="btnSample" data-i18n="demo.sample"></button>
+    <a class="link strong" href="./" data-i18n="demo.home"></a>
+    <a class="link strong" href="https://github.com/tanktangmold/label-print-enhancer/releases/latest" target="_blank" rel="noopener" data-i18n="demo.install"></a>
+  </div>
+
+  <main class="layout">
+    <aside class="panel" id="panel">
+      <section class="group">
+        <h2 data-i18n="sec.profile"></h2>
+        <select id="profile" data-ui-only></select>
+        <div class="row profile-actions">
+          <button type="button" class="btn small" id="btnProfileSave" data-i18n="profile.save"></button>
+          <button type="button" class="btn small" id="btnProfileSaveAs" data-i18n="profile.saveAs"></button>
+          <button type="button" class="btn small" id="btnProfileDelete" data-i18n="profile.delete"></button>
+        </div>
+        <div class="row" id="profileNameRow" hidden>
+          <input type="text" id="profileName" maxlength="60" data-ui-only data-i18n-placeholder="profile.namePlaceholder">
+          <button type="button" class="btn small primary-soft" id="btnProfileNameOk" data-i18n="profile.ok"></button>
+          <button type="button" class="btn small" id="btnProfileNameCancel" data-i18n="profile.cancel"></button>
+        </div>
+        <p class="muted small" id="profileState"></p>
+      </section>
+
+      <section class="group">
+        <h2 data-i18n="sec.source"></h2>
+        <div class="file-row">
+          <label class="btn secondary"><span data-i18n="source.pick"></span><input type="file" id="fileInput" accept="application/pdf,.pdf" hidden></label>
+          <span class="muted small" data-i18n="source.drop"></span>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2 data-i18n="sec.paper"></h2>
+        <select id="paper"></select>
+        <div class="row" id="customPaperRow">
+          <label><span data-i18n="paper.width"></span> <input type="number" id="paperW" step="0.1"> mm</label>
+          <label><span data-i18n="paper.height"></span> <input type="number" id="paperH" step="0.1"> mm</label>
+        </div>
+        <p class="muted small" data-i18n="paper.hint"></p>
+      </section>
+
+      <section class="group">
+        <h2 data-i18n="sec.layout"></h2>
+        <div class="row crop-row">
+          <span data-i18n="crop.label"></span>
+          <span class="crop-info" id="cropInfo"></span>
+          <button type="button" class="link strong" id="btnCropClear" data-i18n="crop.clear"></button>
+        </div>
+        <div class="seg">
+          <label><input type="radio" name="fitMode" value="scale"><span data-i18n="fit.scale"></span></label>
+          <label><input type="radio" name="fitMode" value="auto"><span data-i18n="fit.auto"></span></label>
+        </div>
+        <div data-mode="scale">
+          <label class="row"><span data-i18n="scale.label"></span> <input type="number" id="scale" step="1" min="10" max="400"> %</label>
+          <div class="row">
+            <label><span data-i18n="margin.top"></span> <input type="number" id="marginTop" step="0.5"> mm</label>
+            <label><span data-i18n="margin.left"></span> <input type="number" id="marginLeft" step="0.5"> mm</label>
+          </div>
+          <div class="seg">
+            <label><input type="radio" name="align" value="top-left"><span data-i18n="align.topLeft"></span></label>
+            <label><input type="radio" name="align" value="center"><span data-i18n="align.center"></span></label>
+          </div>
+        </div>
+        <div data-mode="auto">
+          <label class="row"><span data-i18n="pad.label"></span> <input type="number" id="autoPadding" step="0.5" min="0" max="30"> mm</label>
+          <p class="muted small" data-i18n="auto.hint"></p>
+        </div>
+        <label class="row"><span data-i18n="rotate.label"></span>
+          <select id="rotate">
+            <option value="0">0°</option>
+            <option value="90" data-i18n="rotate.90"></option>
+            <option value="180">180°</option>
+            <option value="270" data-i18n="rotate.270"></option>
+          </select>
+        </label>
+      </section>
+
+      <section class="group">
+        <h2 data-i18n="sec.image"></h2>
+        <label class="row"><span data-i18n="dpi.label"></span>
+          <select id="dpi">
+            <option value="203" data-i18n="dpi.203"></option>
+            <option value="300">300 dpi</option>
+            <option value="400">400 dpi</option>
+            <option value="600">600 dpi</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="mono"> <span data-i18n="mono.label"></span></label>
+        <label class="row" id="thresholdRow"><span data-i18n="threshold.label"></span> <input type="range" id="threshold" min="40" max="220" step="1"> <output id="thresholdOut"></output></label>
+      </section>
+
+      <section class="group" data-ext-only>
+        <h2 data-i18n="sec.auto"></h2>
+        <label class="check"><input type="checkbox" id="autoTakeover"> <span data-i18n="auto.takeover"></span></label>
+        <label class="check"><input type="checkbox" id="autoPrint"> <span data-i18n="auto.print"></span></label>
+      </section>
+    </aside>
+
+    <section class="stage" id="stage" data-view="preview">
+      <div class="stage-tools" id="stageTools" role="toolbar">
+        <button type="button" data-view="preview" data-i18n="mode.preview"></button>
+        <button type="button" data-view="select" data-i18n="mode.select"></button>
+        <button type="button" data-view="arrange" data-i18n="mode.arrange"></button>
+      </div>
+      <div class="edit-bar" id="editBar" hidden>
+        <span class="edit-text" id="editReadout"></span>
+        <span class="edit-actions" data-for-view="select">
+          <button type="button" class="btn small" id="btnDetect" data-i18n="select.detect"></button>
+          <button type="button" class="btn small" id="btnWholePage" data-i18n="select.full"></button>
+          <button type="button" class="btn small primary-soft" id="btnSelectDone" data-i18n="select.done"></button>
+        </span>
+        <span class="edit-actions" data-for-view="arrange">
+          <button type="button" class="btn small" id="btnCenter" data-i18n="arrange.center"></button>
+          <button type="button" class="btn small" id="btnFit" data-i18n="arrange.fit"></button>
+          <button type="button" class="btn small primary-soft" id="btnArrangeDone" data-i18n="arrange.done"></button>
+        </span>
+      </div>
+      <p class="edit-hint" data-for-view="select" data-i18n="select.hint" hidden></p>
+      <p class="edit-hint" data-for-view="arrange" data-i18n="arrange.hint" hidden></p>
+      <div class="paper-tag" id="paperTag"></div>
+      <div class="paper-stage" id="paperStage">
+        <div class="paper-wrap" id="paperWrap">
+          <div class="empty" id="empty" data-i18n="empty"></div>
+        </div>
+      </div>
+      <div class="source-wrap" id="sourceWrap"></div>
+      <nav class="pager">
+        <button id="first" type="button" data-i18n-title="pager.first">⏮</button>
+        <button id="prev" type="button" data-i18n-title="pager.prev">◀</button>
+        <span id="pageInfo">0 / 0</span>
+        <button id="next" type="button" data-i18n-title="pager.next">▶</button>
+        <button id="last" type="button" data-i18n-title="pager.last">⏭</button>
+      </nav>
+      <div id="message" class="message" hidden></div>
+    </section>
+  </main>
+
+  <footer class="bottombar">
+    <p class="hint" id="hint"></p>
+    <span class="summary" id="summary"></span>
+    <button class="btn secondary" id="btnOriginal" type="button" data-i18n="btn.original" disabled></button>
+    <button class="btn secondary" id="btnDownload" type="button" data-i18n="btn.download" disabled></button>
+    <button class="btn primary" id="btnPrint" type="button" data-i18n="btn.print" disabled></button>
+  </footer>
+  <div class="print-blocker" data-i18n="printBlocker"></div>
+</body>
+</html>
