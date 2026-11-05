@@ -1,4 +1,5 @@
 // 排版核心：纸张/坐标换算、设置校验、版面计算、二值化、内容边界检测。
+import { DEFAULT_WATERMARK, normalizeOverlays, normalizeWatermark } from './edits.js';
 // 纯函数，不依赖 DOM —— 扩展页面和 Node 单测共用。
 
 export const MM_PER_INCH = 25.4;
@@ -57,6 +58,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   autoPrint: false,
   lang: 'auto',
   crop: null, // 框选的打印区域 {x,y,w,h}（pt，源页面左上为原点，已含旋转）；null = 整页
+  overlays: Object.freeze([]), // 「每页同位置」的盖白/马赛克（跟着打印方案保存）
+  watermark: DEFAULT_WATERMARK, // 水印（画在每张纸上）
 });
 
 const NUMBER_LIMITS = Object.freeze({
@@ -120,6 +123,8 @@ export function normalizeSettings(input, base = DEFAULT_SETTINGS) {
     if (typeof src[key] === 'boolean') out[key] = src[key];
   }
   if ('crop' in src) out.crop = normalizeCrop(src.crop);
+  if ('overlays' in src) out.overlays = normalizeOverlays(src.overlays);
+  if ('watermark' in src) out.watermark = normalizeWatermark(src.watermark);
   const preset = PAPER_PRESETS.find((p) => p.id === out.paper);
   if (preset && preset.w !== null) {
     out.paperW = preset.w;

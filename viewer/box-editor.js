@@ -106,15 +106,18 @@ export function createBoxEditor({ host, units, box: initial, aspectLock, allowDr
     else commit(rectFromPoints(drag.p0, p, u.w, u.h), false);
   }
 
+  const sameBox = (a, b) => a && b && a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
+
   function onPointerUp(ev) {
     if (!drag) return;
     const wasDraw = drag.kind === 'draw';
+    const unchanged = !wasDraw && sameBox(drag.start, box); // 只是点了一下，没拖
     drag = null;
     host.releasePointerCapture?.(ev.pointerId);
     host.classList.remove('dragging-box');
     const minSize = MIN_SIZE_PX * unitsPerPx();
     if (wasDraw && box && (box.w < minSize || box.h < minSize)) return; // 只是点了一下
-    if (box) commit(box, true);
+    if (box && !unchanged) commit(box, true);
   }
 
   function onWheel(ev) {
@@ -145,6 +148,15 @@ export function createBoxEditor({ host, units, box: initial, aspectLock, allowDr
   return {
     get box() {
       return box;
+    },
+    /** 外部已处理了这次按下（如点选刚选中的对象），接着按拖动处理，选中后不用再按一次。 */
+    begin(ev) {
+      if (!box || ev.button !== 0) return;
+      drag = { kind: 'move', start: box, p0: toUnits(ev) };
+      ev.preventDefault();
+      host.setPointerCapture(ev.pointerId);
+      frame.focus({ preventScroll: true });
+      host.classList.add('dragging-box');
     },
     /** 外部改了框（按钮、面板数值）：只刷新显示，不回调。 */
     set(next) {

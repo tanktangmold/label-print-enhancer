@@ -46,7 +46,7 @@
       <section class="group">
         <h2 data-i18n="sec.source"></h2>
         <div class="file-row">
-          <label class="btn secondary"><span data-i18n="source.pick"></span><input type="file" id="fileInput" accept="application/pdf,.pdf" hidden></label>
+          <label class="btn secondary"><span data-i18n="source.pick"></span><input type="file" id="fileInput" accept="application/pdf,.pdf,image/png,image/jpeg,image/webp,image/gif,image/bmp" multiple hidden></label>
           <span class="muted small" data-i18n="source.drop"></span>
         </div>
       </section>
@@ -111,6 +111,21 @@
         <label class="row" id="thresholdRow"><span data-i18n="threshold.label"></span> <input type="range" id="threshold" min="40" max="220" step="1"> <output id="thresholdOut"></output></label>
       </section>
 
+      <section class="group" id="wmSection">
+        <h2 data-i18n="sec.watermark"></h2>
+        <label class="check"><input type="checkbox" id="wmEnabled"> <span data-i18n="wm.enabled"></span></label>
+        <div id="wmFields">
+          <label class="row"><span data-i18n="wm.text"></span> <input type="text" id="wmText" maxlength="60" class="grow"></label>
+          <div class="row">
+            <label><span data-i18n="wm.size"></span> <input type="number" id="wmSize" min="6" max="200" step="1"> pt</label>
+            <label><span data-i18n="wm.angle"></span> <input type="number" id="wmAngle" min="-90" max="90" step="5"> °</label>
+          </div>
+          <label class="row"><span data-i18n="wm.opacity"></span> <input type="range" id="wmOpacity" min="5" max="100" step="5"> <output id="wmOpacityOut"></output></label>
+          <label class="row"><span data-i18n="wm.color"></span> <input type="color" id="wmColor"></label>
+          <p class="muted small" data-i18n="wm.hint"></p>
+        </div>
+      </section>
+
       <section class="group" data-ext-only>
         <h2 data-i18n="sec.auto"></h2>
         <label class="check"><input type="checkbox" id="autoTakeover"> <span data-i18n="auto.takeover"></span></label>
@@ -123,6 +138,7 @@
         <button type="button" data-view="preview" data-i18n="mode.preview"></button>
         <button type="button" data-view="select" data-i18n="mode.select"></button>
         <button type="button" data-view="arrange" data-i18n="mode.arrange"></button>
+        <button type="button" data-view="edit" data-i18n="mode.edit"></button>
       </div>
       <div class="edit-bar" id="editBar" hidden>
         <span class="edit-text" id="editReadout"></span>
@@ -146,6 +162,35 @@
         </div>
       </div>
       <div class="source-wrap" id="sourceWrap"></div>
+      <div class="edit-view" id="editView" hidden>
+        <div class="edit-toolbar" role="toolbar">
+          <span class="tool-group">
+            <button type="button" class="tool" data-tool="select" data-i18n="edit.tool.select"></button>
+            <button type="button" class="tool" data-tool="text" data-i18n="edit.tool.text"></button>
+            <button type="button" class="tool" data-tool="whiteout" data-i18n="edit.tool.whiteout"></button>
+            <button type="button" class="tool" data-tool="mosaic" data-i18n="edit.tool.mosaic"></button>
+            <button type="button" class="tool" data-tool="image" data-i18n="edit.tool.image"></button>
+            <button type="button" class="tool" data-tool="watermark" data-i18n="edit.tool.watermark"></button>
+          </span>
+          <span class="tool-group">
+            <button type="button" class="btn small" id="btnUndo" data-i18n="edit.undo"></button>
+            <button type="button" class="btn small" id="btnRedo" data-i18n="edit.redo"></button>
+            <button type="button" class="btn small primary-soft" id="btnEditDone" data-i18n="edit.done"></button>
+          </span>
+        </div>
+        <div class="edit-body">
+          <aside class="thumbs">
+            <h3 data-i18n="edit.pages"></h3>
+            <div class="thumb-list" id="thumbList"></div>
+            <label class="btn small add-pages"><span data-i18n="edit.addPages"></span><input type="file" id="appendInput" accept="application/pdf,.pdf,image/png,image/jpeg,image/webp,image/gif,image/bmp" multiple hidden></label>
+          </aside>
+          <div class="edit-main">
+            <div class="edit-page" id="editPage"><canvas id="editCanvas"></canvas></div>
+            <div class="edit-props" id="editProps"></div>
+          </div>
+        </div>
+        <input type="file" id="imageInput" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" hidden>
+      </div>
       <nav class="pager">
         <button id="first" type="button" data-i18n-title="pager.first">⏮</button>
         <button id="prev" type="button" data-i18n-title="pager.prev">◀</button>

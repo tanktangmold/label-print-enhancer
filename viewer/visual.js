@@ -1,7 +1,8 @@
-// 可视化编辑：三种视图
+// 可视化编辑：四种视图
 //   preview  排版后的纸张预览（默认）
 //   select   在原页面上框选要打印的区域（坐标 mm，相对原页面左上）
 //   arrange  在纸张上拖动/缩放选中内容（坐标 mm，相对纸张左上；靠近中线自动吸附居中）
+//   edit     编辑 PDF：页面排序/合并、文字、盖白、马赛克、图片（见 edit.js）
 import { normalizeCrop } from '../core/layout.js';
 import {
   paperMm, sourceRect, contentBoxOnPaper, settingsFromBox, snapToCenter, fitBoxToPaper, clampRect, ptToMm, mmToPt,
@@ -17,11 +18,12 @@ const DETECT_PAD_MM = 1;
 
 /**
  * @param {object} deps
- * @param {() => object} deps.getState  { pdf, page, settings }
+ * @param {() => object} deps.getState  { doc, ref（当前页引用）, settings, objects（当前页的编辑对象） }
  * @param {(patch: object) => void} deps.applyPatch  合并设置并重新排版
  * @param {(err) => void} deps.onError
+ * @param {{activate, deactivate, refresh}} deps.editView  编辑 PDF 视图
  */
-export function createVisualEditor({ getState, applyPatch, onError }) {
+export function createVisualEditor({ getState, applyPatch, onError, editView }) {
   let mode = 'preview';
   let editor = null;
   let src = null; // 当前页源尺寸 pt
@@ -36,20 +38,21 @@ export function createVisualEditor({ getState, applyPatch, onError }) {
   const editBar = $('editBar');
 
   function setButtons() {
-    const hasPdf = !!getState().pdf;
+    const hasPdf = !!getState().doc;
     document.querySelectorAll('#stageTools [data-view]').forEach((btn) => {
       btn.disabled = !hasPdf;
       btn.classList.toggle('active', btn.dataset.view === mode);
       btn.setAttribute('aria-pressed', String(btn.dataset.view === mode));
     });
     stage.dataset.view = mode;
-    editBar.hidden = mode === 'preview';
+    editBar.hidden = mode === 'preview' || mode === 'edit';
     document.querySelectorAll('[data-for-view]').forEach((el) => {
       el.hidden = el.dataset.forView !== mode;
     });
   }
 
   function teardown() {
+    if (mode === 'edit') editView.deactivate();
     abort.abort();
     abort = new AbortController();
     editor?.destroy();
@@ -71,8 +74,8 @@ export function createVisualEditor({ getState, applyPatch, onError }) {
   const mmToCrop = (b) => normalizeCrop({ x: mmToPt(b.x), y: mmToPt(b.y), w: mmToPt(b.w), h: mmToPt(b.h) });
 
   async function proposeCrop() {
-    const { pdf, page, settings } = getState();
-    const found = await detectContent(pdf, page, settings, abort.signal);
+    const { doc, ref, settings, objects } = getState();
+    const found = await detectContent(doc, ref, settings, abort.signal, objects);
     if (!found) return null;
     const pad = mmToPt(DETECT_PAD_MM);
     return clampCrop({ x: found.x - pad, y: found.y - pad, w: found.w + 2 * pad, h: found.h + 2 * pad });
@@ -84,10 +87,10 @@ export function createVisualEditor({ getState, applyPatch, onError }) {
   }
 
   async function enterSelect(token) {
-    const { pdf, page, settings } = getState();
-    src = await sourceSize(pdf, page, settings);
+    const { doc, ref, settings, objects } = getState();
+    src = await sourceSize(doc, ref, settings);
     const width = Math.min(1600, Math.round(stage.clientWidth * (window.devicePixelRatio || 1)));
-    const canvas = await renderRegion(pdf, page, settings, width, null, abort.signal);
+    const canvas = await renderRegion(doc, ref, settings, width, null, abort.signal, { objects });
     if (token !== seq) return releaseCanvas(canvas);
     sourceWrap.style.setProperty('--ratio', String(src.w / src.h));
     sourceWrap.replaceChildren(canvas);
@@ -136,12 +139,12 @@ export function createVisualEditor({ getState, applyPatch, onError }) {
   }
 
   async function ensureLayer(token) {
-    const { pdf, page, settings } = getState();
+    const { doc, ref, settings, objects } = getState();
     const rect = sourceRect(settings, src.w, src.h);
-    const key = JSON.stringify([page, rect, settings.rotate, settings.mono, settings.threshold]);
+    const key = JSON.stringify([ref.id, ref.rotate, rect, settings.rotate, settings.mono, settings.threshold, objects]);
     if (layer && key === layerKey) return;
     const width = Math.min(2400, Math.round(stage.clientWidth * (window.devicePixelRatio || 1)));
-    const canvas = await renderRegion(pdf, page, settings, width, rect, abort.signal);
+    const canvas = await renderRegion(doc, ref, settings, width, rect, abort.signal, { objects });
     if (token !== seq) return releaseCanvas(canvas);
     if (layer) {
       layer.remove();
@@ -182,8 +185,8 @@ export function createVisualEditor({ getState, applyPatch, onError }) {
   }
 
   async function enterArrange(token) {
-    const { pdf, page } = getState();
-    src = await sourceSize(pdf, page, getState().settings);
+    const { doc, ref } = getState();
+    src = await sourceSize(doc, ref, getState().settings);
     if (token !== seq) return;
     await tightenToContent(token);
     if (token !== seq) return;
@@ -218,12 +221,13 @@ export function createVisualEditor({ getState, applyPatch, onError }) {
   // ---------- 对外 ----------
 
   async function setMode(next) {
-    if (!getState().pdf) next = 'preview';
+    if (!getState().doc) next = 'preview';
     const token = ++seq;
     teardown();
     mode = next;
     setButtons();
     if (mode === 'preview') return;
+    if (mode === 'edit') return editView.activate();
     try {
       if (mode === 'select') await enterSelect(token);
       else await enterArrange(token);
@@ -235,6 +239,7 @@ export function createVisualEditor({ getState, applyPatch, onError }) {
   /** 设置/翻页/换文件后调用：编辑视图里同步框和内容层。 */
   function refresh({ reload = false } = {}) {
     if (mode === 'preview') return setButtons();
+    if (mode === 'edit') return editView.refresh();
     if (reload) return setMode(mode);
     if (mode === 'select') return; // 框选视图里的改动来自框本身，不用重画
     // arrange：面板改了数值 → 框和内容层跟着变

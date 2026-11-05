@@ -171,7 +171,7 @@ async function main() {
     const v = await openPage(`${base}/viewer.html#src=${encodeURIComponent(`${base}/tests/fixtures/a4-label.pdf`)}`);
     await v.ready();
     await waitFor(() => v.evaluate(`!!document.querySelector('#paperWrap canvas')`), 15000, '预览渲染');
-    const st = await v.evaluate(`(() => { const s = window.__lpe.getState(); return { pages: s.pdf.numPages, name: s.name } })()`);
+    const st = await v.evaluate(`(() => { const s = window.__lpe.getState(); return { pages: s.doc.pages.length, name: s.name } })()`);
     check('读取 3 页 PDF', st.pages === 3, JSON.stringify(st));
     const box = await v.evaluate(BBOX_JS);
     // 假标签框：左上 (3,3)mm、104×58mm → ×0.93 再下移 2mm

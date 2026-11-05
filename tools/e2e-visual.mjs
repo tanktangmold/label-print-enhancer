@@ -10,7 +10,7 @@ const arg = (name) => {
   return i > 0 ? process.argv[i + 1] : null;
 };
 const SHOTS = arg('--shots') ? resolve(arg('--shots')) : null;
-const PORT = 8797;
+const PORT = 18797; // 8797 常被本机其他程序占用
 const site = `http://127.0.0.1:${PORT}${BASE}`;
 
 const results = [];

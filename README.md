@@ -31,6 +31,7 @@ No combination of Chrome's built-in settings avoids step 2. This tool redraws ev
 - 19 paper presets: Japan Post, Yamato, Sagawa, 4×6 in, 100×150 mm, China e-waybills, A4/A5/A6, B5/B6, Letter, postcard, plus custom sizes
 - **Visual selection:** draw a box around the part of the page to print, then move and resize it on the paper with live coordinates and snap-to-center
 - **Print profiles:** save settings under a name and switch in one click; your last-used settings are kept for next time
+- **Edit before printing:** merge several PDFs and images, reorder, rotate, duplicate and delete pages; add text, white-out, mosaic, images and a watermark. The preview is exactly what prints
 - Custom scale and margins (top-left or centered), or **auto crop & fit** that finds the printed area and fills the label
 - Rotation, resolution (203–600 dpi) and **pure black & white** output tuned for thermal printers
 - Live preview of exactly what will be printed, page by page
@@ -78,7 +79,22 @@ The paper size must exist in your printer driver. If it doesn't, add it in the d
 
 ### Print profiles
 
-Once the layout is right, click **Save as…** under **Print profile** and give it a name (for example “Yu-Packet label”). Picking a profile applies it. Your last-used settings — including the selected profile and any changes you made afterwards — are kept for next time; the panel shows *Modified* when they differ from the profile, and **Save** writes them into it. Pick the profile again to go back to its saved state. Profiles store the paper, layout, print area, rotation and image settings; the UI language and automation options stay global.
+Once the layout is right, click **Save as…** under **Print profile** and give it a name (for example “Yu-Packet label”). Picking a profile applies it. Your last-used settings — including the selected profile and any changes you made afterwards — are kept for next time; the panel shows *Modified* when they differ from the profile, and **Save** writes them into it. Pick the profile again to go back to its saved state. Profiles store the paper, layout, print area, rotation, image settings, watermark and same-spot white-out / mosaic; the UI language and automation options stay global.
+
+### Edit before printing
+
+Click **Edit PDF** above the preview.
+
+- **Pages (left):** drag thumbnails to reorder, or use ↑ ↓ ⟳ (rotate 90°) ⧉ (duplicate) ✕ (delete). **+ Add PDF / images** appends files to the end; choosing or dropping several files at once also merges them.
+- **Text:** drag a box (or click for a default size) and type. It has a white background by default, so you can cover old text and write new text. Size, color and bold are below the page.
+- **White-out / Mosaic:** drag over the area, e.g. a name or phone number. Tick **Same spot on every page** to apply it to all pages and save it in the print profile.
+- **Image:** pick a PNG / JPEG / WebP / GIF / BMP; it is placed in the middle of the page. Drag to move, drag the corners to resize (aspect ratio kept).
+- **Watermark:** opens the watermark settings in the left panel. One watermark is drawn in the middle of every sheet (outlined text in black & white mode) and it is saved in the print profile.
+- **Undo / Redo:** buttons, Ctrl+Z and Ctrl+Y (or Ctrl+Shift+Z). Delete removes the selected object.
+
+White-out and mosaic really remove the content: every page is printed as an image, so nothing underneath is kept in the print file. Text, images, merged files and page order apply to the open file only. The original PDF is never changed — editing existing text in place is not supported; cover it with a text box instead.
+
+![Editing a PDF: page thumbnails, white-out, mosaic, text and an image](docs/images/edit-pdf.png)
 
 ## Paper presets
 
@@ -108,6 +124,7 @@ Carrier specifications can change. If your printout is slightly off, use the cus
 | Rotate | 0° | Use it if the source PDF is sideways |
 | Resolution | 400 dpi | 203 dpi is the native resolution of most 4-inch thermal printers |
 | Pure black & white | on, threshold 128 | Raise the threshold if thin text looks faint |
+| Watermark | off | Text, size, angle, opacity, color. Outlined text in black & white mode |
 | Open Japan Post PDFs automatically | on | Extension only |
 | Show the print dialog right after opening | off | Extension only. Only fires on the first open, not on reload. |
 
@@ -136,6 +153,7 @@ npm run e2e        # extension end-to-end test in Chrome for Testing (headless)
 npm run e2e:web    # web version end-to-end test (local server with the GitHub Pages sub-path)
 npm run e2e:visual # visual selection, move/resize, snap-to-center and print profiles with real mouse events
 npm run e2e:profiles # switching profiles, keeping last-used settings across reloads
+npm run e2e:edit  # PDF editing: merge, reorder, delete pages, white-out, mosaic, text, images, watermark, undo
 npm run pages:serve   # preview the web version at http://127.0.0.1:8799/label-print-enhancer/
 npm run pack       # build dist/label-print-enhancer-vX.Y.Z.zip for a release
 ```
@@ -145,7 +163,7 @@ npm run pack       # build dist/label-print-enhancer-vX.Y.Z.zip for a release
 ### How it works
 
 ```
-PDF ──pdf.js──▶ canvas the size of the paper (scale, margins, rotation, black & white)
+PDF / images ──pdf.js──▶ canvas the size of the paper (edits, scale, margins, rotation, black & white, watermark)
     ──pdf-lib──▶ new PDF whose pages = paper size (1-bit image per page)
     ──IndexedDB + service worker──▶ same-origin URL ──hidden iframe──▶ Chrome print preview
 ```

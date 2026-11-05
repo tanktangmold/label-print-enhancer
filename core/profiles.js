@@ -4,7 +4,7 @@ import { normalizeSettings } from './layout.js';
 // 属于方案的设置（界面语言、自动接管等全局偏好不随方案变）
 export const PROFILE_KEYS = Object.freeze([
   'paper', 'paperW', 'paperH', 'fitMode', 'scale', 'marginTop', 'marginLeft', 'align',
-  'autoPadding', 'rotate', 'dpi', 'mono', 'threshold', 'crop',
+  'autoPadding', 'rotate', 'dpi', 'mono', 'threshold', 'crop', 'overlays', 'watermark',
 ]);
 const MAX_PROFILES = 50;
 const MAX_NAME = 60;

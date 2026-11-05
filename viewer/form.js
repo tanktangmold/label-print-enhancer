@@ -46,6 +46,26 @@ export function fillLangOptions(value) {
   select.value = value;
 }
 
+function writeWatermark(w) {
+  $('wmEnabled').checked = w.enabled;
+  $('wmText').value = w.text;
+  $('wmSize').value = String(w.size);
+  $('wmAngle').value = String(w.angle);
+  $('wmOpacity').value = String(Math.round(w.opacity * 100));
+  $('wmColor').value = w.color;
+}
+
+function readWatermark() {
+  return {
+    enabled: $('wmEnabled').checked,
+    text: $('wmText').value,
+    size: $('wmSize').value,
+    angle: $('wmAngle').value,
+    opacity: Number($('wmOpacity').value) / 100,
+    color: $('wmColor').value,
+  };
+}
+
 /** 把设置写进表单，并按设置显示/隐藏相关项。 */
 export function writeForm(s) {
   for (const key of NUMBER_FIELDS) $(key).value = String(s[key]);
@@ -55,6 +75,7 @@ export function writeForm(s) {
     const radio = document.querySelector(`input[name="${key}"][value="${s[key]}"]`);
     if (radio) radio.checked = true;
   }
+  writeWatermark(s.watermark);
   syncVisibility(s);
 }
 
@@ -63,6 +84,8 @@ export function syncVisibility(s) {
   $('thresholdOut').textContent = String(s.threshold);
   $('customPaperRow').hidden = s.paper !== 'custom';
   $('thresholdRow').hidden = !s.mono;
+  $('wmFields').hidden = !s.watermark.enabled;
+  $('wmOpacityOut').textContent = `${Math.round(s.watermark.opacity * 100)}%`;
   document.querySelectorAll('[data-mode]').forEach((el) => {
     el.hidden = el.dataset.mode !== s.fitMode;
   });
@@ -75,6 +98,7 @@ export function readForm(base) {
   for (const key of CHECK_FIELDS) raw[key] = $(key).checked;
   for (const key of SELECT_FIELDS) raw[key] = key === 'paper' ? $(key).value : Number($(key).value);
   for (const key of RADIO_FIELDS) raw[key] = document.querySelector(`input[name="${key}"]:checked`)?.value;
+  raw.watermark = readWatermark();
   return normalizeSettings(raw, base);
 }
 

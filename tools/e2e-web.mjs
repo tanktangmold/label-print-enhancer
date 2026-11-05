@@ -12,7 +12,7 @@ const arg = (name) => {
   return i > 0 ? process.argv[i + 1] : null;
 };
 const SHOTS = arg('--shots') ? resolve(arg('--shots')) : null;
-const PORT = 8798;
+const PORT = 18798; // 8798 附近常被本机其他程序占用
 const site = `http://127.0.0.1:${PORT}${BASE}`;
 
 const results = [];
@@ -32,8 +32,10 @@ try {
     titles[lang] = await home.evaluate(`(() => { const s = document.getElementById('lang'); s.value = '${lang}'; s.dispatchEvent(new Event('change')); return document.querySelector('h1').textContent; })()`);
   }
   check('主页三种语言标题都能切换', titles.en.startsWith('Label Print Enhancer') && titles.ja.startsWith('ラベル印刷アシスト') && titles.zh.startsWith('标签打印增强'), JSON.stringify(titles));
+  // 截图是懒加载：滚到每张图让它加载
+  await home.evaluate(`Promise.all([...document.querySelectorAll('.compare img')].map((img) => { img.scrollIntoView(); return img.decode().catch(() => {}); }))`);
   const imgs = await home.evaluate(`[...document.querySelectorAll('.compare img')].map((img) => img.complete && img.naturalWidth > 0)`);
-  check('主页截图都加载成功（前后对比 + 可视化选区）', imgs.length === 4 && imgs.every(Boolean));
+  check('主页截图都加载成功（前后对比 + 可视化选区 + 编辑 PDF）', imgs.length === 6 && imgs.every(Boolean), JSON.stringify(imgs));
   check('主页无报错', home.errors.length === 0, home.errors.slice(0, 2).join(' | '));
 
   // ② 排版页：#demo 自动载入示例、语言跟主页一致（刚选了中文，存在同一份设置里）
@@ -41,7 +43,7 @@ try {
   await waitFor(() => v.evaluate(`!!window.__lpe`), 10000, '排版页脚本');
   await v.evaluate('window.__lpe.ready');
   await waitFor(() => v.evaluate(`!!document.querySelector('#paperWrap canvas')`), 20000, '示例预览');
-  const st = await v.evaluate(`({ pages: window.__lpe.getState().pdf?.numPages, print: document.getElementById('btnPrint').textContent, demoBar: !document.querySelector('.demo-bar').hidden, autoHidden: document.querySelector('[data-ext-only]').hidden })`);
+  const st = await v.evaluate(`({ pages: window.__lpe.pageCount(), print: document.getElementById('btnPrint').textContent, demoBar: !document.querySelector('.demo-bar').hidden, autoHidden: document.querySelector('[data-ext-only]').hidden })`);
   check('在线版载入示例 3 页、显示提示条、隐藏扩展专用设置', st.pages === 3 && st.demoBar && st.autoHidden, JSON.stringify(st));
   check('排版页沿用主页选的语言（中文）', st.print === '打印', st.print);
 

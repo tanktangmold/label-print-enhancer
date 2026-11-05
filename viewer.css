@@ -205,3 +205,68 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .message { position: absolute; }
 .edit-layer { z-index: 1; }
 .edit-hint { background: var(--stage); padding: 0 6px; border-radius: 4px; }
+
+/* 编辑 PDF：工具条 / 左侧页面缩略图 / 中间页面 / 下方属性栏 */
+.stage[data-view="edit"] { justify-content: flex-start; }
+.stage[data-view="edit"] .paper-stage, .stage[data-view="edit"] .paper-tag { display: none; }
+.edit-view { width: 100%; max-width: 1400px; flex: none; display: flex; flex-direction: column; gap: 10px; }
+.edit-toolbar {
+  position: relative; z-index: 5; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  background: #fff; padding: 8px 10px; border-radius: 8px; box-shadow: var(--shadow);
+}
+.tool-group { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.tool { border: 1px solid #c9ccd1; background: #fff; border-radius: 6px; padding: 5px 12px; font: inherit; cursor: pointer; }
+.tool:hover { border-color: var(--accent); }
+.tool.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.edit-body { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; align-items: start; }
+.thumbs {
+  display: flex; flex-direction: column; gap: 8px; background: #fff; border-radius: 8px; box-shadow: var(--shadow); padding: 8px;
+  max-height: max(320px, calc(100vh - 350px));
+}
+.thumbs h3 { margin: 0; font-size: 13px; }
+.thumb-list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 2px; }
+.thumb { position: relative; flex: none; border: 2px solid transparent; border-radius: 6px; padding: 4px; cursor: pointer; background: var(--stage); }
+.thumb.current { border-color: var(--accent); }
+.thumb.drop-target { outline: 2px dashed var(--accent); outline-offset: 2px; }
+.thumb-frame { min-height: 60px; }
+.thumb-frame canvas { display: block; width: 100%; height: auto; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
+.thumb-no { position: absolute; left: 6px; top: 6px; font-size: 11px; background: rgba(31, 35, 40, 0.8); color: #fff; border-radius: 3px; padding: 0 5px; }
+.thumb-actions { display: flex; justify-content: space-between; margin-top: 4px; }
+.thumb-btn { width: 22px; padding: 3px 0; border: 1px solid #c9ccd1; background: #fff; border-radius: 4px; font-size: 12px; line-height: 1; cursor: pointer; }
+.thumb-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.thumb-btn:disabled { opacity: 0.35; cursor: default; }
+.add-pages { width: 100%; white-space: normal; text-align: center; }
+.edit-main { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.edit-page {
+  position: relative; flex: none; background: #fff; box-shadow: var(--shadow); touch-action: none; user-select: none;
+  aspect-ratio: var(--ratio, 0.7);
+  height: max(240px, min(calc(100vh - 450px), calc((100vw - 580px) / var(--ratio, 0.7))));
+}
+.edit-page.drawing { cursor: crosshair; }
+.edit-page canvas { display: block; width: 100%; height: 100%; }
+.edit-props {
+  position: relative; z-index: 5; width: 100%; max-width: 900px; min-height: 44px;
+  background: #fff; border-radius: 8px; box-shadow: var(--shadow); padding: 8px 12px;
+}
+.prop-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.prop { display: inline-flex; align-items: center; gap: 6px; }
+.prop.check { margin: 0; align-items: center; }
+.prop.check input { margin-top: 0; }
+.prop textarea { min-width: 220px; resize: vertical; font: inherit; padding: 4px 6px; border: 1px solid #c9ccd1; border-radius: 6px; }
+.prop-hint { margin: 0; }
+.range-row { display: inline-flex; align-items: center; gap: 6px; min-width: 140px; }
+.btn.danger { color: var(--accent); border-color: var(--accent); }
+
+/* 水印 */
+input.grow { flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid #c9ccd1; border-radius: 6px; font: inherit; }
+input[type="color"] { width: 44px; height: 28px; padding: 0 2px; border: 1px solid #c9ccd1; border-radius: 6px; background: #fff; cursor: pointer; }
+#wmSection.flash { animation: lpe-flash 1.6s ease-out; }
+@keyframes lpe-flash { 0%, 50% { background: var(--accent-soft); } 100% { background: transparent; } }
+
+@media (max-width: 860px) {
+  .edit-body { grid-template-columns: 1fr; }
+  .thumbs { max-height: none; }
+  .thumb-list { flex-direction: row; overflow-x: auto; }
+  .thumb { width: 110px; }
+  .edit-page { height: auto; width: 100%; }
+}
