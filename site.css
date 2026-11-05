@@ -1,0 +1,84 @@
+:root {
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --text: #1f2328;
+  --muted: #5f6670;
+  --line: #e3e5e8;
+  --accent: #e5483b;
+  --accent-hover: #cf3a2e;
+  --good: #1f8a4c;
+  --radius: 10px;
+  font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); }
+a { color: var(--accent); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.nav {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 24px; background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--text); text-decoration: none; }
+.nav-right { display: flex; align-items: center; gap: 16px; }
+.nav-link { color: var(--muted); text-decoration: none; font-weight: 600; }
+.nav-link:hover { color: var(--accent); }
+select { padding: 5px 8px; border: 1px solid #c9ccd1; border-radius: 6px; font: inherit; background: #fff; }
+
+main { max-width: 1080px; margin: 0 auto; padding: 0 24px 48px; }
+section { margin: 56px 0; }
+h1 { font-size: clamp(28px, 4.2vw, 44px); line-height: 1.2; margin: 0 0 16px; letter-spacing: -0.01em; }
+h2 { font-size: 22px; margin: 0 0 12px; }
+.hero { text-align: center; margin-top: 64px; }
+.lead { max-width: 760px; margin: 0 auto; font-size: 18px; color: var(--muted); }
+
+.cta { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
+.btn {
+  display: inline-flex; align-items: center; padding: 11px 22px; border-radius: 8px; border: 1px solid #c9ccd1;
+  background: var(--surface); color: var(--text); text-decoration: none; font-weight: 600;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: var(--accent-hover); color: #fff; }
+
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.compare figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.compare figcaption { padding: 10px 14px; font-weight: 700; border-bottom: 1px solid var(--line); }
+.compare figcaption::before { margin-right: 6px; }
+.compare .bad { color: var(--accent); }
+.compare .bad::before { content: "✗"; }
+.compare .good { color: var(--good); }
+.compare .good::before { content: "✓"; }
+.compare img { display: block; width: 100%; height: auto; }
+.caption { grid-column: 1 / -1; margin: 0; text-align: center; color: var(--muted); font-size: 14px; }
+
+.section-lead { color: var(--muted); margin: 0 0 18px; max-width: 820px; }
+.explain { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.explain p { margin: 0; color: var(--muted); }
+
+.features { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.features li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+
+.install { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px 32px; }
+.install ol { margin: 0; padding-left: 22px; }
+.install li { margin: 6px 0; }
+.install .cta { justify-content: flex-start; }
+
+.foot { text-align: center; padding: 28px 24px 40px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); }
+
+@media (max-width: 760px) {
+  .nav { padding: 10px 16px; }
+  main { padding: 0 16px 40px; }
+  .compare, .explain { grid-template-columns: 1fr; }
+  .features { grid-template-columns: 1fr; }
+  .install { padding: 20px; }
+  .hero { margin-top: 40px; }
+}
+
+/* 按界面语言选字体：日文用日文字形、中文用中文字形 */
+:root:lang(ja) { font-family: "Yu Gothic UI", "Yu Gothic", Meiryo, "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
+:root:lang(zh-CN) { font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", system-ui, sans-serif; }
+:root:lang(en) { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
