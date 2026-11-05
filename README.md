@@ -86,13 +86,15 @@ Once the layout is right, click **Save as…** under **Print profile** and give 
 Click **Edit PDF** above the preview.
 
 - **Pages (left):** drag thumbnails to reorder, or use ↑ ↓ ⟳ (rotate 90°) ⧉ (duplicate) ✕ (delete). **+ Add PDF / images** appends files to the end; choosing or dropping several files at once also merges them.
+- **Existing text:** with **Select / move**, point at text in the PDF (it gets outlined) and click it. **Delete this text** (or the Delete key) whites it out; **Edit text** (or double-click / Enter) covers it and puts the same words in a text box at the same size, with the cursor at the end, so you can change them.
 - **Text:** drag a box (or click for a default size) and type. It has a white background by default, so you can cover old text and write new text. Size, color and bold are below the page.
 - **White-out / Mosaic:** drag over the area, e.g. a name or phone number. Tick **Same spot on every page** to apply it to all pages and save it in the print profile.
 - **Image:** pick a PNG / JPEG / WebP / GIF / BMP; it is placed in the middle of the page. Drag to move, drag the corners to resize (aspect ratio kept).
 - **Watermark:** opens the watermark settings in the left panel. One watermark is drawn in the middle of every sheet (outlined text in black & white mode) and it is saved in the print profile.
 - **Undo / Redo:** buttons, Ctrl+Z and Ctrl+Y (or Ctrl+Shift+Z). Delete removes the selected object.
+- **Zoom:** − / 100% / + next to the page buttons, or Ctrl + mouse wheel. Works in the preview, the print-area views and the editor; click the percentage to fit the window again.
 
-White-out and mosaic really remove the content: every page is printed as an image, so nothing underneath is kept in the print file. Text, images, merged files and page order apply to the open file only. The original PDF is never changed — editing existing text in place is not supported; cover it with a text box instead.
+White-out and mosaic really remove the content: every page is printed as an image, so nothing underneath is kept in the print file. Text, images, merged files and page order apply to the open file only. The original PDF is never changed — "editing" existing text means covering it and writing new text on top. Scanned pages have no selectable text; use White-out / Mosaic and Text there.
 
 ![Editing a PDF: page thumbnails, white-out, mosaic, text and an image](docs/images/edit-pdf.png)
 

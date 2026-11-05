@@ -1,18 +1,20 @@
 // 「编辑 PDF」视图：左边页面缩略图（排序/旋转/复制/删除/追加），中间在页面上加文字、盖白、马赛克、图片，下方属性栏，可撤销。
+// 点 PDF 上原有的文字可以删除（盖白）或修改（盖白 + 重写同样的字号/字体），不改原文件。
 // 编辑对象坐标单位 pt，相对「编辑视图里的页面」左上角（含 PDF 自带和单页旋转；排版设置里的旋转在出图时再转，见 overlays.js）。
 // 「每页同位置」的盖白/马赛克存在设置的 overlays 里（跟着打印方案保存）。
 import { t, getLang } from '../core/i18n.js';
 import {
-  addObject, updateObject, removeObject, copyEdits, hitTest, normalizeObject, normalizeOverlays, turnPageEdits, MAX_GLOBAL_OVERLAYS,
+  addObject, updateObject, removeObject, copyEdits, hitTest, normalizeObject, normalizeOverlays, turnPageEdits, fitTextRect, MAX_GLOBAL_OVERLAYS,
 } from '../core/edits.js';
 import { movePage, removePage, duplicatePage, rotatePage, keepEditsFor } from '../core/pages.js';
 import { createHistory } from '../core/history.js';
 import { clampRect, ptToMm } from '../core/visual.js';
+import { hitRun } from '../core/text-runs.js';
 import { createBoxEditor } from './box-editor.js';
 import { createPagesPanel } from './edit-pages.js';
-import { renderProps } from './edit-props.js';
-import { renderRegion, sourceSize, releaseCanvas, isCancelled } from './render.js';
-import { drawOverlays } from './overlays.js';
+import { renderProps, renderRunProps } from './edit-props.js';
+import { renderRegion, sourceSize, textRuns, releaseCanvas, isCancelled } from './render.js';
+import { drawOverlays, FONT_STACK, SERIF_STACK } from './overlays.js';
 import { addImage } from './images.js';
 
 const $ = (id) => document.getElementById(id);
@@ -20,16 +22,28 @@ const DRAW_TOOLS = ['text', 'whiteout', 'mosaic'];
 const MIN_DRAW_PT = 6;
 const DEFAULT_SIZE = Object.freeze({ text: { w: 160, h: 28 }, whiteout: { w: 80, h: 24 }, mosaic: { w: 80, h: 24 } });
 const THUMBS_DELAY = 250; // 连续编辑（打字）时缩略图晚一点再重画
+const RERENDER_DELAY = 200; // 缩放 / 改窗口大小后，停下来再按新清晰度重画底图
+const MIN_BASE_PX = 600;
+const MAX_BASE_PX = 2400; // 底图最宽像素（放大后也不无限加，免得占太多内存）
+const PAGE_MARGIN = 24;
 const GEOMETRY = ['x', 'y', 'w', 'h'];
 const fmt = (pt) => (Math.round(ptToMm(pt) * 10) / 10).toFixed(1);
 let idSeq = 0;
 const newId = (prefix = 'o') => `${prefix}${Date.now().toString(36)}${++idSeq}`;
 
+const measureCtx = document.createElement('canvas').getContext('2d');
+
+/** 文字对象在自己的字号/字体下量字宽（pt）。 */
+function measurerFor(o) {
+  measureCtx.font = `${o.bold ? 'bold ' : ''}${o.size}px ${o.serif ? SERIF_STACK : FONT_STACK}`;
+  return (s) => measureCtx.measureText(s).width;
+}
+
 /** 编辑视图按「不含排版旋转」显示页面（排版旋转只影响排到纸上的方向）。 */
 const editSettings = (settings) => (settings.rotate ? { ...settings, rotate: 0 } : settings);
 
-/** 编辑快捷键：撤销 / 重做 / 删除 / 取消选中（焦点在输入框里时不管）。 */
-function bindKeys({ isActive, undo, redo, remove, escape }) {
+/** 编辑快捷键：撤销 / 重做 / 删除 / 改文字 / 取消选中（焦点在输入框里时不管）。 */
+function bindKeys({ isActive, undo, redo, remove, enter, escape }) {
   document.addEventListener('keydown', (e) => {
     if (!isActive() || e.target.closest('input, select, textarea')) return;
     const mod = e.ctrlKey || e.metaKey;
@@ -40,15 +54,35 @@ function bindKeys({ isActive, undo, redo, remove, escape }) {
       else undo();
     } else if ((e.key === 'Delete' || e.key === 'Backspace') && remove()) {
       e.preventDefault();
+    } else if (e.key === 'Enter' && !e.target.closest('button, [role="button"]') && enter()) {
+      e.preventDefault();
     } else if (e.key === 'Escape') {
       escape();
     }
   });
 }
 
+/** 页面上的提示框（悬停 / 点中的原有文字），按百分比定位，跟着缩放走。 */
+function marker(host, className) {
+  const node = document.createElement('div');
+  node.className = className;
+  node.hidden = true;
+  host.append(node);
+  return (r, size) => {
+    node.hidden = !r;
+    if (!r) return;
+    Object.assign(node.style, {
+      left: `${(r.x / size.w) * 100}%`,
+      top: `${(r.y / size.h) * 100}%`,
+      width: `${(r.w / size.w) * 100}%`,
+      height: `${(r.h / size.h) * 100}%`,
+    });
+  };
+}
+
 /**
  * @param {object} deps
- * @param {() => object} deps.getState  { doc, edits, page, settings, ref, objectsFor(ref) }
+ * @param {() => object} deps.getState  { doc, edits, page, settings, ref, zoom, objectsFor(ref) }
  * @param {(snap: {pages, edits, overlays}) => void} deps.apply  应用页面/编辑/每页同位置对象的改动
  * @param {(page: number) => void} deps.goPage
  * @param {(files: File[]) => void} deps.onAppend
@@ -57,14 +91,19 @@ function bindKeys({ isActive, undo, redo, remove, escape }) {
  */
 export function createEditView({ getState, apply, goPage, onAppend, onWatermark, notify }) {
   const view = $('editView');
+  const scroller = $('editScroll');
   const pageEl = $('editPage');
   const canvas = $('editCanvas');
   const props = $('editProps');
   const history = createHistory(50);
+  const showHover = marker(pageEl, 'text-hover');
+  const showPick = marker(pageEl, 'text-pick');
+  const runCache = new Map(); // 页面键 → { runs, promise }：原有文字段
   let active = false;
   let tool = 'select';
   let selectedId = null;
-  let justCreated = null; // 刚画出来的文字框：属性栏打开时把输入框选中，直接打字替换
+  let picked = null; // 点中的原有文字 { run, refId, rotate }
+  let justCreated = null; // 刚加的文字框 { id, mode }：属性栏打开时把焦点放进输入框
   let editor = null;
   let editorKey = '';
   let base = null; // 当前页底图（无编辑对象）
@@ -74,6 +113,7 @@ export function createEditView({ getState, apply, goPage, onAppend, onWatermark,
   let pending = null; // 连续输入（打字、拖滑块）开始前的快照，结束时记成一步撤销
   let propsKey = ''; // 属性栏当前显示的内容；没变就不重建（打字时重建会丢焦点）
   let thumbsTimer = 0;
+  let rerenderTimer = 0;
   let seq = 0;
   let abort = new AbortController();
 
@@ -149,23 +189,104 @@ export function createEditView({ getState, apply, goPage, onAppend, onWatermark,
     return { edits: updateObject(edits, ref.id, id, patch) };
   }
 
+  // ---------- 原有文字 ----------
+
+  const runKey = (ref) => JSON.stringify([ref.src, ref.pageNo, ref.rotate]);
+
+  /** 这一页的原有文字段（第一次用时读取，之后缓存）。读完如果还在这一页，刷新属性栏的提示。 */
+  function runsFor(ref) {
+    const key = runKey(ref);
+    let entry = runCache.get(key);
+    if (entry) return entry;
+    entry = { runs: null, promise: null };
+    const { doc, settings } = getState();
+    entry.promise = textRuns(doc, ref, editSettings(settings))
+      .catch((err) => {
+        console.warn('[label-print] text layer unavailable', err);
+        return [];
+      })
+      .then((runs) => {
+        entry.runs = runs;
+        if (active && getState().ref && runKey(getState().ref) === key) syncProps();
+        return runs;
+      });
+    runCache.set(key, entry);
+    return entry;
+  }
+
+  const pickedRun = () => {
+    const ref = getState().ref;
+    return picked && ref && picked.refId === ref.id && picked.rotate === ref.rotate ? picked.run : null; // 页面转过就作废
+  };
+  const pageHasNoText = () => {
+    const ref = getState().ref;
+    return !!ref && runCache.get(runKey(ref))?.runs?.length === 0;
+  };
+
+  function pick(run) {
+    const ref = getState().ref;
+    picked = run && ref ? { run, refId: ref.id, rotate: ref.rotate } : null;
+    showPick(run, size);
+    syncProps();
+  }
+
+  function deleteRun(run) {
+    const pad = Math.max(0.5, run.size * 0.08);
+    const rect = clampRect({ x: run.x - pad, y: run.y - pad, w: run.w + 2 * pad, h: run.h + 2 * pad }, size.w, size.h);
+    picked = null;
+    showPick(null, size);
+    addToPage({ id: newId(), type: 'whiteout', ...rect });
+  }
+
+  /** 修改 = 盖白 + 在原位置用同样字号、相近字体重写原文，光标放在最后接着改。 */
+  function editRun(run) {
+    const s = run.size;
+    const rect = clampRect({ x: run.x - 0.15 * s, y: run.y - 0.1 * s, w: run.w + 0.3 * s + 1, h: run.h + 0.2 * s }, size.w, size.h);
+    const id = newId();
+    justCreated = { id, mode: 'end' };
+    picked = null;
+    showPick(null, size);
+    addToPage(withTextRoom({ id, type: 'text', ...rect, text: run.str, size: s, color: '#000000', bold: false, serif: run.serif, cover: true }));
+  }
+
+  /** 文字对象：框装不下就往右加宽、再加高（替代字体比原字宽、或者接着打了字时，字不会被裁掉）。 */
+  function withTextRoom(o) {
+    if (o.type !== 'text') return o;
+    const clean = normalizeObject(o);
+    return clean ? { ...o, ...fitTextRect(clean, measurerFor(clean), size) } : o;
+  }
+
   // ---------- 画面 ----------
 
   function draw() {
     if (!base) return;
-    canvas.width = base.width;
-    canvas.height = base.height;
+    if (canvas.width !== base.width || canvas.height !== base.height) {
+      canvas.width = base.width; // 只在大小变了时重新分配（拖动时每帧重画，别每次都重建画布）
+      canvas.height = base.height;
+    }
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     ctx.drawImage(base, 0, 0);
     const objects = currentObjects().map((o) => (live && o.id === live.id ? { ...o, ...live.rect } : o));
     drawOverlays(ctx, objects, { scale: base.width / size.w });
   }
 
+  /** 按可用空间 × 缩放比例定页面的显示大小（px），返回宽度。 */
+  function layoutPage() {
+    // 用外框大小（含滚动条）算「适合窗口」，放大出现滚动条后不会再缩一点
+    const fitW = Math.max(100, Math.min(scroller.offsetWidth - PAGE_MARGIN, ((scroller.offsetHeight - PAGE_MARGIN) * size.w) / size.h));
+    const w = Math.round(fitW * (getState().zoom ?? 1));
+    pageEl.style.width = `${w}px`;
+    pageEl.style.height = `${Math.round((w * size.h) / size.w)}px`;
+    return w;
+  }
+
   async function ensureBase(token) {
     const { doc, ref, settings } = getState();
     const shown = editSettings(settings);
     size = await sourceSize(doc, ref, shown);
-    const width = Math.min(1600, Math.round(Math.max(600, pageEl.parentElement.clientWidth) * (window.devicePixelRatio || 1)));
+    if (token !== seq) return;
+    const px = layoutPage() * (window.devicePixelRatio || 1);
+    const width = Math.min(MAX_BASE_PX, Math.max(MIN_BASE_PX, Math.round(px / 100) * 100));
     const key = JSON.stringify([ref.id, ref.src, ref.pageNo, ref.rotate, width]);
     if (key === baseKey && base) return;
     const next = await renderRegion(doc, ref, shown, width, null, abort.signal, { objects: [], mono: false });
@@ -182,9 +303,11 @@ export function createEditView({ getState, apply, goPage, onAppend, onWatermark,
     try {
       await ensureBase(token);
       if (token !== seq) return;
-      pageEl.style.setProperty('--ratio', String(size.w / size.h));
       if (selectedId && !selected()) selectedId = null;
+      runsFor(ref); // 提前读好原有文字，悬停时马上能提示
+      hideHover();
       draw();
+      showPick(pickedRun(), size);
       syncEditor();
       syncProps();
     } catch (err) {
@@ -204,7 +327,8 @@ export function createEditView({ getState, apply, goPage, onAppend, onWatermark,
   const readout = (b) => t('select.readout', { x: fmt(b.x), y: fmt(b.y), w: fmt(b.w), h: fmt(b.h) });
 
   function boxEditor(opts) {
-    return createBoxEditor({ host: pageEl, units, constrain: clampToPage, readout, ...opts });
+    // 滚轮留给页面滚动（Ctrl+滚轮缩放），不用来缩放对象
+    return createBoxEditor({ host: pageEl, units, constrain: clampToPage, readout, wheelResize: false, ...opts });
   }
 
   /** 画框工具 → 空白处拖出新对象；选择工具 → 选中对象的移动/缩放框。同一个对象只更新框，不重建（保留焦点，方向键能连续微移）。 */
@@ -252,8 +376,8 @@ export function createEditView({ getState, apply, goPage, onAppend, onWatermark,
     const small = b.w < MIN_DRAW_PT || b.h < MIN_DRAW_PT;
     const rect = clampRect(small ? { x: b.x, y: b.y, ...DEFAULT_SIZE[tool] } : b, size.w, size.h);
     const id = newId();
-    if (tool === 'text') justCreated = id;
-    addToPage({ id, type: tool, ...rect, text: t('edit.newText'), size: 10, color: '#000000', cover: true, block: 6 });
+    if (tool === 'text') justCreated = { id, mode: 'select' };
+    addToPage(withTextRoom({ id, type: tool, ...rect, text: t('edit.newText'), size: 10, color: '#000000', cover: true, block: 6 }));
   }
 
   async function insertImage(file) {
@@ -273,6 +397,10 @@ export function createEditView({ getState, apply, goPage, onAppend, onWatermark,
   function select(id) {
     if (id !== selectedId) settle();
     selectedId = id;
+    if (id) {
+      picked = null;
+      showPick(null, size);
+    }
     syncEditor();
     syncProps();
   }
@@ -307,17 +435,21 @@ export function createEditView({ getState, apply, goPage, onAppend, onWatermark,
     const obj = selected();
     if (!obj) return;
     if (!pending) pending = snapshot();
-    apply(updated(obj.id, patch));
+    const grown = obj.type === 'text' ? withTextRoom({ ...obj, ...patch }) : null;
+    apply(updated(obj.id, grown ? { ...patch, w: grown.w, h: grown.h } : patch));
     propsKey = propsKeyOf(); // 属性栏里已经是新值了
     if (done) settle();
     syncTools();
   }
 
+  const hintKey = () => (tool === 'select' && pageHasNoText() ? 'edit.hint.selectNoText' : `edit.hint.${tool}`);
+
   /** 属性栏只看类型相关的属性（位置大小变了不重建，免得拖完框把文字输入框抢走焦点）。 */
   function propsKeyOf() {
     const obj = selected();
     const shown = obj && Object.fromEntries(Object.entries(obj).filter(([k]) => !GEOMETRY.includes(k)));
-    return JSON.stringify([getLang(), tool, shown, obj ? isGlobal(obj.id) : false]);
+    const run = obj ? null : pickedRun();
+    return JSON.stringify([getLang(), tool, shown, obj ? isGlobal(obj.id) : false, run && [run.x, run.y, run.str], hintKey()]);
   }
 
   function syncProps() {
@@ -326,13 +458,19 @@ export function createEditView({ getState, apply, goPage, onAppend, onWatermark,
     if (key === propsKey) return;
     propsKey = key;
     const obj = selected();
-    const focusText = !!obj && obj.id === justCreated;
+    const run = obj ? null : pickedRun();
+    if (run) {
+      renderRunProps(props, { run, onDelete: () => deleteRun(run), onEdit: () => editRun(run) });
+      return;
+    }
+    const focusText = obj && justCreated?.id === obj.id ? justCreated.mode : false;
     if (focusText) justCreated = null;
     renderProps(props, {
       tool,
       selected: obj,
       isGlobal: obj ? isGlobal(obj.id) : false,
       focusText,
+      hintKey: hintKey(),
       onEdit,
       onToggleGlobal: toggleGlobal,
       onDelete: deleteSelected,
@@ -354,6 +492,9 @@ export function createEditView({ getState, apply, goPage, onAppend, onWatermark,
     if (next === 'image') return $('imageInput').click();
     if (next === 'watermark') return onWatermark();
     tool = next;
+    picked = null;
+    showPick(null, size);
+    hideHover();
     if (tool !== 'select') selectedId = null;
     syncTools();
     syncEditor();
@@ -401,12 +542,45 @@ export function createEditView({ getState, apply, goPage, onAppend, onWatermark,
     return { x: ((ev.clientX - r.left) / r.width) * size.w, y: ((ev.clientY - r.top) / r.height) * size.h };
   }
 
-  // 选择工具下点页面：点中对象就选中并可以直接拖；点空白取消选中（先于拖动框的处理注册）
+  // 选择工具下点页面：点中加上去的对象 → 选中并可直接拖；否则点中原有文字 → 选中这段文字（删除 / 修改）
   pageEl.addEventListener('pointerdown', (ev) => {
     if (!active || tool !== 'select' || ev.button !== 0 || ev.target.closest('.edit-box')) return;
-    const hit = hitTest(currentObjects(), toPt(ev));
+    const pt = toPt(ev);
+    const hit = hitTest(currentObjects(), pt);
     select(hit ? hit.id : null);
-    if (hit) editor?.begin(ev);
+    if (hit) return editor?.begin(ev);
+    const ref = getState().ref;
+    const choose = (runs) => getState().ref === ref && tool === 'select' && !selectedId && pick(hitRun(runs, pt));
+    const entry = runsFor(ref);
+    if (entry.runs) choose(entry.runs);
+    else entry.promise.then(choose);
+  });
+
+  function hideHover() {
+    showHover(null, size);
+    pageEl.classList.remove('over-text');
+  }
+
+  // 悬停在原有文字上：框出来，提示可以点
+  pageEl.addEventListener('pointermove', (ev) => {
+    if (!active || tool !== 'select' || ev.buttons) return hideHover();
+    const pt = toPt(ev);
+    const runs = runCache.get(runKey(getState().ref))?.runs;
+    const run = runs && !hitTest(currentObjects(), pt) ? hitRun(runs, pt) : null;
+    showHover(run, size);
+    pageEl.classList.toggle('over-text', !!run);
+  });
+  pageEl.addEventListener('pointerleave', hideHover);
+
+  // 双击原有文字：直接修改；双击加上去的文字框：进入输入框
+  pageEl.addEventListener('dblclick', () => {
+    if (!active || tool !== 'select') return;
+    const run = pickedRun();
+    if (run) return editRun(run);
+    if (selected()?.type !== 'text') return;
+    const area = $('propText');
+    area?.focus();
+    area?.select();
   });
 
   view.querySelectorAll('[data-tool]').forEach((btn) => btn.addEventListener('click', () => setTool(btn.dataset.tool)));
@@ -421,24 +595,44 @@ export function createEditView({ getState, apply, goPage, onAppend, onWatermark,
     isActive: () => active,
     undo,
     redo,
-    remove: deleteSelected,
+    remove: () => {
+      if (deleteSelected()) return true;
+      const run = pickedRun();
+      if (run) deleteRun(run);
+      return !!run;
+    },
+    enter: () => {
+      const run = pickedRun();
+      if (run) editRun(run);
+      return !!run;
+    },
     escape: () => {
       setTool('select');
       select(null);
     },
   });
 
+  function relayout() {
+    if (!active || !base) return;
+    layoutPage();
+    clearTimeout(rerenderTimer);
+    rerenderTimer = setTimeout(renderPage, RERENDER_DELAY); // 按新大小重画清晰的底图
+  }
+  window.addEventListener('resize', relayout);
+
   function stop() {
     seq++;
     abort.abort();
     abort = new AbortController();
     clearTimeout(thumbsTimer);
+    clearTimeout(rerenderTimer);
     pages.cancel();
     editor?.destroy();
     editor = null;
     editorKey = '';
     live = null;
     propsKey = '';
+    hideHover();
   }
 
   return {
@@ -462,6 +656,8 @@ export function createEditView({ getState, apply, goPage, onAppend, onWatermark,
       scheduleThumbs();
       syncTools();
     },
+    /** 缩放比例变了：马上按新大小摆好（先拉伸旧图），停下来再重画清晰的。 */
+    relayout,
     /** 追加文件前：记一次撤销点。 */
     pushHistory() {
       settle();
@@ -479,6 +675,8 @@ export function createEditView({ getState, apply, goPage, onAppend, onWatermark,
       stop();
       pending = null;
       history.clear();
+      runCache.clear();
+      picked = null;
       selectedId = null;
       justCreated = null;
       tool = 'select';

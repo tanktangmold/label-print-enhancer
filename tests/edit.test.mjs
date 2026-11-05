@@ -190,3 +190,60 @@ test('旋转：turnRect 四个角度、转四次回到原处；turnObjects 盖�
   assert.equal(edits.p1[0].x, 10); // 原数据不变
   assert.equal(turnPageEdits(edits, 'p2', 90, page), edits);
 });
+
+test('原有文字：文字项换算成页面矩形（含旋转），同一行相邻的拼成一段，点选取最小的', async () => {
+  const { itemBox, mergeRuns, hitRun, multiply } = await import('../core/text-runs.js');
+  assert.deepEqual(multiply([1, 0, 0, 1, 5, 6], [2, 0, 0, 2, 1, 1]), [2, 0, 0, 2, 6, 7]);
+  const vp = [1, 0, 0, -1, 0, 800]; // 600×800 页面，scale 1，不旋转
+  const item = (str, x, baseline, size, width) => ({ str, transform: [size, 0, 0, size, x, 800 - baseline], width });
+  const b = itemBox(item('abc', 50, 100, 10, 40), vp, { serif: true });
+  assert.equal(b.str, 'abc');
+  assert.ok(Math.abs(b.x - 50) < 1e-9 && Math.abs(b.y - 91) < 1e-9 && Math.abs(b.w - 40) < 1e-9 && Math.abs(b.h - 11.2) < 1e-9);
+  assert.equal(b.serif, true);
+  assert.equal(b.horizontal, true);
+  assert.equal(itemBox(item('   ', 0, 0, 10, 5), vp), null);
+  // 旋转 90°：视口变换 [0,1,1,0,0,0]（scale 1）——文字变成竖着走，外接矩形宽高互换
+  const turned = itemBox(item('abc', 50, 100, 10, 40), [0, 1, 1, 0, 0, 0]);
+  assert.ok(Math.abs(turned.w - 11.2) < 1e-9 && Math.abs(turned.h - 40) < 1e-9);
+  assert.equal(turned.horizontal, false);
+
+  const boxes = [
+    item('合同会社', 100, 50, 10, 40),
+    item('CAU', 144, 50, 10, 20), // 间隔 4pt（0.4 个字号）→ 同一段，补空格
+    item('様', 300, 50, 10, 10), // 远 → 另一段
+    item('検査品名', 100, 80, 10, 40), // 下一行
+    item('乾燥', 140, 80.5, 10, 20), // 紧挨着 → 同一段，不补空格
+  ].map((it) => itemBox(it, vp));
+  const runs = mergeRuns(boxes);
+  assert.deepEqual(runs.map((r) => r.str), ['合同会社 CAU', '様', '検査品名乾燥']);
+  assert.equal(runs[0].w, 64);
+  assert.ok(Object.isFrozen(runs) && Object.isFrozen(runs[0]));
+  assert.equal(hitRun(runs, { x: 150, y: 45 }).str, '合同会社 CAU');
+  assert.equal(hitRun(runs, { x: 250, y: 45 }), null);
+  // 重叠时取面积最小的
+  const nested = [{ str: 'big', x: 0, y: 0, w: 100, h: 100 }, { str: 'small', x: 10, y: 10, w: 10, h: 10 }];
+  assert.equal(hitRun(nested, { x: 15, y: 15 }).str, 'small');
+});
+
+test('竖排文字：按整列长度往下排；文字框随内容加宽、到页边后换行加高、只变大不变小', async () => {
+  const { itemBox } = await import('../core/text-runs.js');
+  const { fitTextRect } = await import('../core/edits.js');
+  const vp = [1, 0, 0, -1, 0, 800];
+  // pdf.js 竖排：矩阵没转，width = 字号，height = 整列长度
+  const col = itemBox({ str: '東京都', transform: [10, 0, 0, 10, 100, 700], width: 10, height: 30 }, vp, { vertical: true });
+  assert.equal(col.horizontal, false);
+  assert.ok(Math.abs(col.h - 30) < 1e-9, `高 ${col.h}`); // 往下 30pt
+  assert.ok(Math.abs(col.y - 100) < 1e-9, `上 ${col.y}`);
+  assert.ok(col.w > 10 && col.w < 12); // 一列宽 ≈ 1 个字号
+  assert.ok(col.x < 100 && col.x + col.w > 100);
+
+  const measure = (s) => s.length * 6; // 每个字 6pt
+  const page = { w: 300, h: 400 };
+  const o = { x: 10, y: 10, w: 40, h: 14, size: 10, text: 'abcdefghij' }; // 需要 60 + 3 + 1
+  assert.deepEqual(fitTextRect(o, measure, page), { w: 64, h: 14 });
+  assert.deepEqual(fitTextRect({ ...o, text: 'ab' }, measure, page), { w: 40, h: 14 }); // 不变小
+  const edge = fitTextRect({ ...o, x: 260, text: 'abcdefghij' }, measure, page); // 右边只剩 40pt
+  assert.equal(edge.w, 40);
+  assert.ok(edge.h > 14, `换行后加高 ${edge.h}`);
+  assert.equal(fitTextRect({ ...o, text: 'a\nb\nc' }, measure, page).h, 38); // 1.5 + 2 × 12.5 + 11.5（最后一行只算字身）
+});

@@ -9,6 +9,8 @@ import {
 } from '../lib/pdf-lib/pdf-lib.esm.min.js';
 import { computePlacement, binarize, findContentBBox, toPdfGray } from '../core/layout.js';
 import { getPage, rotationOf } from './sources.js';
+import { itemBox, mergeRuns } from '../core/text-runs.js';
+import { turnRect } from '../core/edits.js';
 import { drawOverlays, drawWatermark } from './overlays.js';
 
 const BBOX_DPI = 144;
@@ -100,6 +102,25 @@ export function detectContent(doc, ref, settings, signal, objects = []) {
   return withPage(doc, ref, (page) => {
     const opts = overlayOpts(page, settings, ref);
     return detectContentBBox(page, rotationOf(page, settings, ref), signal, (ctx, scale) => drawOverlays(ctx, objects, { scale, ...opts }));
+  });
+}
+
+/**
+ * 页面上原有的文字段（pt，左上原点，含旋转）。图片、扫描件没有文字层，返回空数组。
+ * 先按没单独转过的方向找（文字是横的，才能按行拼接），再跟着单页旋转转过去。
+ */
+export function textRuns(doc, ref, settings) {
+  return withPage(doc, ref, async (page) => {
+    if (typeof page.getTextContent !== 'function') return [];
+    const vp = page.getViewport({ scale: 1, rotation: rotationOf(page, settings, { ...ref, rotate: 0 }) });
+    const content = await page.getTextContent();
+    const style = (item) => content.styles?.[item.fontName] ?? {};
+    const boxes = content.items.map((item) => itemBox(item, vp.transform, { serif: style(item).fontFamily === 'serif', vertical: !!style(item).vertical }));
+    const runs = mergeRuns(boxes.filter(Boolean));
+    const turn = (((ref.rotate || 0) % 360) + 360) % 360;
+    if (!turn) return runs;
+    const base = { w: vp.width, h: vp.height };
+    return Object.freeze(runs.map((r) => Object.freeze({ ...r, ...turnRect(r, turn, base) })));
   });
 }
 

@@ -185,7 +185,9 @@
             <label class="btn small add-pages"><span data-i18n="edit.addPages"></span><input type="file" id="appendInput" accept="application/pdf,.pdf,image/png,image/jpeg,image/webp,image/gif,image/bmp" multiple hidden></label>
           </aside>
           <div class="edit-main">
-            <div class="edit-page" id="editPage"><canvas id="editCanvas"></canvas></div>
+            <div class="edit-scroll" id="editScroll">
+              <div class="edit-page" id="editPage"><canvas id="editCanvas"></canvas></div>
+            </div>
             <div class="edit-props" id="editProps"></div>
           </div>
         </div>
@@ -197,6 +199,11 @@
         <span id="pageInfo">0 / 0</span>
         <button id="next" type="button" data-i18n-title="pager.next">▶</button>
         <button id="last" type="button" data-i18n-title="pager.last">⏭</button>
+        <span class="zoom" role="group" data-i18n-title="zoom.label">
+          <button id="zoomOut" type="button" data-i18n-title="zoom.out">−</button>
+          <button id="zoomReset" type="button" data-i18n-title="zoom.reset">100%</button>
+          <button id="zoomIn" type="button" data-i18n-title="zoom.in">+</button>
+        </span>
       </nav>
       <div id="message" class="message" hidden></div>
     </section>

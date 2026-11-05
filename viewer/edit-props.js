@@ -28,14 +28,15 @@ function checkbox(labelKey, checked, onToggle, id) {
  * @param {string} opts.tool  当前工具
  * @param {object|null} opts.selected  选中的对象
  * @param {boolean} opts.isGlobal  选中的是不是「每页同位置」对象
- * @param {boolean} [opts.focusText]  刚画出来的文字框：选中输入框里的文字，直接打字替换
+ * @param {false|'select'|'end'} [opts.focusText]  刚加的文字框：把焦点放进输入框（select=全选直接替换，end=光标放最后接着改）
+ * @param {string} [opts.hintKey]  没选中时的提示词条
  * @param {(patch: object, o: {commit: boolean}) => void} opts.onEdit  改属性（commit=true 时记入撤销）
  * @param {(on: boolean) => void} opts.onToggleGlobal
  * @param {() => void} opts.onDelete
  */
-export function renderProps(container, { tool, selected, isGlobal, focusText = false, onEdit, onToggleGlobal, onDelete }) {
+export function renderProps(container, { tool, selected, isGlobal, focusText = false, hintKey, onEdit, onToggleGlobal, onDelete }) {
   if (!selected) {
-    container.replaceChildren(el('p', { class: 'muted small prop-hint', text: t(`edit.hint.${tool}`) }));
+    container.replaceChildren(el('p', { class: 'muted small prop-hint', text: t(hintKey ?? `edit.hint.${tool}`) }));
     return;
   }
   const items = [];
@@ -56,6 +57,7 @@ export function renderProps(container, { tool, selected, isGlobal, focusText = f
       field('edit.prop.size', size),
       field('edit.prop.color', color),
       checkbox('edit.prop.bold', selected.bold, (on) => onEdit({ bold: on }, { commit: true }), 'propBold'),
+      checkbox('edit.prop.serif', selected.serif, (on) => onEdit({ serif: on }, { commit: true }), 'propSerif'),
       checkbox('edit.prop.cover', selected.cover, (on) => onEdit({ cover: on }, { commit: true }), 'propCover'),
     );
   }
@@ -77,6 +79,33 @@ export function renderProps(container, { tool, selected, isGlobal, focusText = f
   if (focusText && selected.type === 'text') {
     const area = container.querySelector('#propText');
     area.focus();
-    area.select();
+    if (focusText === 'end') area.setSelectionRange(area.value.length, area.value.length);
+    else area.select();
   }
+}
+
+const MAX_SHOWN = 60;
+
+/**
+ * 点中 PDF 原有文字时的属性栏：显示原文，给「删除」「修改」两个按钮。
+ * @param {HTMLElement} container
+ * @param {{ run: {str: string}, onDelete: () => void, onEdit: () => void }} opts
+ */
+export function renderRunProps(container, { run, onDelete, onEdit }) {
+  const shown = run.str.length > MAX_SHOWN ? `${run.str.slice(0, MAX_SHOWN)}…` : run.str;
+  const del = el('button', { type: 'button', class: 'btn small danger', id: 'runDelete', text: t('edit.run.delete') });
+  del.addEventListener('click', onDelete);
+  const edit = el('button', { type: 'button', class: 'btn small primary-soft', id: 'runEdit', text: t('edit.run.edit') });
+  edit.addEventListener('click', onEdit);
+  container.replaceChildren(
+    el(
+      'div',
+      { class: 'prop-row' },
+      el('span', { class: 'run-label', text: t('edit.run.label') }),
+      el('span', { class: 'run-text', id: 'runText', text: shown }),
+      del,
+      edit,
+    ),
+    el('p', { class: 'muted small prop-hint', text: t('edit.run.hint') }),
+  );
 }

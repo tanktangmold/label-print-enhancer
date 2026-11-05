@@ -6,7 +6,7 @@ import { t, setLang, resolveLang, applyI18n, fillTemplate } from '../core/i18n.j
 import { IS_EXTENSION, assetUrl, ensureOutputServer } from '../core/platform.js';
 import { makePages, appendPages } from '../core/pages.js';
 import { objectsFor } from '../core/edits.js';
-import { renderLabelPage, buildLabelPdf, isCancelled, releaseCanvas } from './render.js';
+import { renderLabelPage, buildLabelPdf, textRuns, isCancelled, releaseCanvas } from './render.js';
 import { openPdfSource, openImageSource, isImageFile, MAX_IMAGE_BYTES } from './sources.js';
 import { fetchPdfBytes, readFileBytes, requestOrigins } from './source.js';
 import { fillPaperOptions, fillLangOptions, writeForm, readForm, syncVisibility, onFormChange, paperLabel } from './form.js';
@@ -15,6 +15,7 @@ import { printPdf, backgroundIsCurrent } from './printer.js';
 import { createVisualEditor } from './visual.js';
 import { createEditView } from './edit.js';
 import { createProfilesUI } from './profiles-ui.js';
+import { createZoom } from './zoom.js';
 import { clearImages } from './images.js';
 
 const $ = (id) => document.getElementById(id);
@@ -51,6 +52,8 @@ const objectsForRef = (ref) => objectsFor(state.edits, ref.id, state.settings.ov
 let visual = null; // 可视化编辑（框选 / 拖动调整 / 编辑 PDF），init 里创建
 let editView = null; // 编辑 PDF 视图
 let profilesUI = null; // 打印方案面板
+let zoom = null; // 放大缩小（预览 / 框选 / 拖动调整 / 编辑 PDF 共用）
+let zoomTimer = 0;
 
 // ---------- 语言 ----------
 
@@ -541,8 +544,16 @@ async function init() {
   setState({ settings });
   await profilesUI.init();
   window.addEventListener('pagehide', flushSave);
+  zoom = createZoom({
+    onChange: () => {
+      if (visual?.mode === 'edit') return editView.relayout();
+      // 框选 / 拖动调整：停下来后按新大小重画清晰的画面（预览只靠 CSS 放大，排版画布本来就是打印分辨率）
+      clearTimeout(zoomTimer);
+      if (visual?.mode === 'select' || visual?.mode === 'arrange') zoomTimer = setTimeout(() => visual.refresh({ reload: true }), 300);
+    },
+  });
   editView = createEditView({
-    getState: () => ({ doc: state.doc, edits: state.edits, page: state.page, settings: state.settings, ref: currentRef(), objectsFor: objectsForRef }),
+    getState: () => ({ doc: state.doc, edits: state.edits, page: state.page, settings: state.settings, ref: currentRef(), zoom: zoom.value, objectsFor: objectsForRef }),
     apply: applyDocSnap,
     goPage,
     onAppend: appendFiles,
@@ -552,7 +563,7 @@ async function init() {
   visual = createVisualEditor({
     getState: () => {
       const ref = currentRef();
-      return { doc: state.doc, ref, settings: state.settings, objects: ref ? objectsForRef(ref) : [] };
+      return { doc: state.doc, ref, settings: state.settings, objects: ref ? objectsForRef(ref) : [], zoom: zoom.value };
     },
     applyPatch,
     onError: (err) => showMessage('error', t('error.render', { page: state.page, err: errorText(err) })),
@@ -586,4 +597,5 @@ window.__lpe = Object.freeze({
   pageCount,
   buildOutput: () => buildOutput(() => {}),
   setMode: (mode) => visual?.setMode(mode),
+  textRuns: (i) => textRuns(state.doc, state.doc.pages[i], { ...state.settings, rotate: 0 }),
 });

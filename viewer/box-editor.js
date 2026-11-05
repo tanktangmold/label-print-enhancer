@@ -23,8 +23,9 @@ function el(tag, className, parent) {
  * @param {(box) => {box, guides?: {x?:boolean,y?:boolean}}} [opts.constrain]  移动/缩放后的修正（吸附、夹边）
  * @param {(box, info) => string} opts.readout  坐标文字
  * @param {(box, {final:boolean}) => void} opts.onChange
+ * @param {boolean|(() => boolean)} [opts.wheelResize]  滚轮缩放框（锁比例时）；关掉就把滚轮留给页面滚动
  */
-export function createBoxEditor({ host, units, box: initial, aspectLock, allowDraw, constrain = (b) => ({ box: b }), readout, onChange, label }) {
+export function createBoxEditor({ host, units, box: initial, aspectLock, allowDraw, constrain = (b) => ({ box: b }), readout, onChange, label, wheelResize = true }) {
   const layer = el('div', 'edit-layer', host);
   const guideV = el('div', 'edit-guide v', layer);
   const guideH = el('div', 'edit-guide h', layer);
@@ -121,7 +122,8 @@ export function createBoxEditor({ host, units, box: initial, aspectLock, allowDr
   }
 
   function onWheel(ev) {
-    if (!box || !aspectLock) return;
+    const wheelOn = typeof wheelResize === 'function' ? wheelResize() : wheelResize;
+    if (!box || !aspectLock || !wheelOn || ev.ctrlKey || ev.metaKey) return; // Ctrl+滚轮是缩放页面
     ev.preventDefault();
     const p = toUnits(ev);
     commit(zoomBox(box, ev.deltaY < 0 ? 1.02 : 1 / 1.02, p.x, p.y), true);

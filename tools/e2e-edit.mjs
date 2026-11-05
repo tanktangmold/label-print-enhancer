@@ -216,10 +216,135 @@ try {
   const n4 = await count();
   check('Delete 删除选中、Ctrl+Z 撤销、Ctrl+Y 重做', n1 === n0 - 1 && n2 === n0 && n3 === n0 - 1 && n4 === n0, [n0, n1, n2, n3, n4].join(' → '));
   await settled();
+
+  // ⑧b 点 PDF 上原有的文字：Delete 删除（盖白）；双击修改（盖白 + 同字号重写，光标在最后）
+  const runs = await v.evaluate('window.__lpe.textRuns(0)');
+  const runOf = (prefix) => runs.find((r) => r.str.startsWith(prefix));
+  const postal = runOf('〒123');
+  const sample = runOf('SAMPLE');
+  const name = runOf('見本');
+  check('识别 PDF 原有文字：字距一个全角空格的姓名算一段', !!postal && !!sample && name?.str === '見本 太郎 様', name?.str);
+  const mid = (r) => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
+  const clickAt = async (pt, clickCount = 1) => {
+    const p = at(await pageRect(), pt.x, pt.y);
+    for (let c = 1; c <= clickCount; c++) {
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: p.x, y: p.y, button: 'left', buttons: 1, clickCount: c }, sid);
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: p.x, y: p.y, button: 'left', buttons: 0, clickCount: c }, sid);
+    }
+  };
+  const hoverAt = async (pt) => {
+    const p = at(await pageRect(), pt.x, pt.y);
+    await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: p.x, y: p.y, buttons: 0 }, sid);
+  };
+  await hoverAt(mid(postal));
+  await sleep(150);
+  const hovered = await v.evaluate(`!document.querySelector('#editPage .text-hover').hidden && document.getElementById('editPage').classList.contains('over-text')`);
+  const objsBefore = (await pageEdits()).length;
+  const inkPostal = await stats(postal);
+  await clickAt(mid(postal));
+  await waitFor(() => v.evaluate(`!!document.getElementById('runDelete')`), 5000, '选中原有文字');
+  const shownRun = await v.evaluate(`({ text: document.getElementById('runText').textContent, pick: !document.querySelector('#editPage .text-pick').hidden })`);
+  await key('Delete', 'Delete', 46);
+  await settled();
+  const afterDel = await stats(postal);
+  const delObj = (await pageEdits()).at(-1);
+  check(
+    '点 PDF 原有文字（悬停有提示）→ 按 Delete：这段文字被盖白删掉',
+    hovered && shownRun.pick && shownRun.text === postal.str && inkPostal.dark > 50 && afterDel.ink === 0 && delObj.type === 'whiteout' && (await pageEdits()).length === objsBefore + 1,
+    `「${shownRun.text}」 深色 ${inkPostal.dark} → 非白 ${afterDel.ink}`,
+  );
+  await clickAt(mid(sample), 2); // 双击 = 修改
+  await waitFor(() => v.evaluate(`document.activeElement?.id === 'propText'`), 5000, '修改原有文字');
+  const caret = await v.evaluate(`(() => { const a = document.getElementById('propText'); return { value: a.value, end: a.selectionStart === a.value.length && a.selectionEnd === a.value.length }; })()`);
+  await cdp.send('Input.insertText', { text: ' 2' }, sid);
+  await settled();
+  await v.evaluate(`document.getElementById('propText').blur()`);
+  const rewritten = (await pageEdits()).at(-1);
+  check(
+    '双击原有文字修改：原文放进文字框、光标在最后，接着打字；同字号、带白底',
+    caret.value === sample.str && caret.end && rewritten.type === 'text' && rewritten.text === `${sample.str} 2` && rewritten.size === sample.size && rewritten.cover,
+    `${JSON.stringify(caret)} → 「${rewritten.text}」 ${rewritten.size}pt`,
+  );
+  // 接着打的字真的画出来了（框跟着变宽，不会被裁掉）：这一行最右边的墨迹超过原文右端
+  const inkRight = await v.evaluate(`(() => {
+    const c = document.getElementById('editCanvas');
+    const k = c.width / ${PAGE.w};
+    const y0 = Math.round(${sample.y} * k), h = Math.max(1, Math.round(${sample.h} * k));
+    const d = c.getContext('2d').getImageData(0, y0, c.width, h).data;
+    let right = -1;
+    for (let j = 0; j < h; j++) for (let i = 0; i < c.width; i++) { const p = (j * c.width + i) * 4; if (d[p] < 128) right = Math.max(right, i); }
+    return right / k;
+  })()`);
+  check(
+    '修改后接着打的字不会被裁掉：文字框自动加宽，新字画在原文右边',
+    rewritten.w > sample.w + 0.3 * sample.size + 1 && inkRight > sample.x + sample.w + 1.5,
+    `框宽 ${sample.w.toFixed(1)} → ${rewritten.w.toFixed(1)}pt，墨迹到 ${inkRight.toFixed(1)}pt（原文右端 ${(sample.x + sample.w).toFixed(1)}）`,
+  );
+  await click('#btnUndo');
+  await click('#btnUndo');
+  await settled();
+  const undoneRewrite = (await pageEdits()).at(-1);
+  await click('#btnRedo');
+  await click('#btnRedo');
+  await settled();
+  check('撤销修改：先撤回打的字，再撤掉文字框', undoneRewrite.type === 'whiteout' && (await pageEdits()).at(-1).text === `${sample.str} 2`, undoneRewrite.type);
+
+  // ⑧c 放大缩小：按钮、Ctrl+滚轮；放大后点文字仍然点得准
+  const before = { w: (await pageRect()).w, cw: await v.evaluate(`document.getElementById('editCanvas').width`) };
+  await click('#zoomIn');
+  await click('#zoomIn');
+  await sleep(800);
+  const zoomed = await v.evaluate(`(() => {
+    const s = document.getElementById('editScroll');
+    return { w: document.getElementById('editPage').getBoundingClientRect().width, label: document.getElementById('zoomReset').textContent, scroll: s.scrollHeight > s.clientHeight, cw: document.getElementById('editCanvas').width };
+  })()`);
+  check(
+    '放大到 150%：页面变大、可以滚动',
+    Math.abs(zoomed.w / before.w - 1.5) < 0.02 && zoomed.label === '150%' && zoomed.scroll,
+    `宽 ${Math.round(before.w)} → ${Math.round(zoomed.w)}`,
+  );
+  const xx = runOf('XX01');
+  await v.evaluate(`(() => {
+    const s = document.getElementById('editScroll'), p = document.getElementById('editPage');
+    const k = p.offsetWidth / ${PAGE.w};
+    s.scrollLeft = p.offsetLeft + ${xx.x + xx.w / 2} * k - s.clientWidth / 2;
+    s.scrollTop = p.offsetTop + ${xx.y + xx.h / 2} * k - s.clientHeight / 2;
+  })()`);
+  await sleep(200);
+  await clickAt(mid(xx));
+  await waitFor(() => v.evaluate(`document.getElementById('runText')?.textContent === 'XX01'`), 5000, '放大后点文字');
+  check('放大后点文字：选中的是鼠标下那段', true, 'XX01');
+  await key('Escape', 'Escape', 27);
+  const sr = await v.evaluate(`(() => { const r = document.getElementById('editScroll').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: sr.x, y: sr.y, deltaX: 0, deltaY: -120, modifiers: CTRL }, sid);
+  await sleep(800);
+  const wheelLabel = await v.evaluate(`document.getElementById('zoomReset').textContent`);
+  const sharp = await v.evaluate(`({ cw: document.getElementById('editCanvas').width, shown: document.getElementById('editPage').getBoundingClientRect().width })`);
+  check('放大到 200% 后按新大小重画清晰的底图', sharp.cw >= sharp.shown - 50 && sharp.cw > before.cw, `画布 ${before.cw} → ${sharp.cw}px，显示 ${Math.round(sharp.shown)}px`);
+  await click('#zoomReset');
+  await sleep(800);
+  const reset = { w: (await pageRect()).w, label: await v.evaluate(`document.getElementById('zoomReset').textContent`) };
+  check('Ctrl+滚轮放大；点百分比恢复适合窗口', wheelLabel === '200%' && reset.label === '100%' && Math.abs(reset.w - before.w) < 2, `${wheelLabel} → ${reset.label}`);
+
+  // 预览也能放大
+  await click('#stageTools [data-view="preview"]');
+  await sleep(500);
+  const paperW = () => v.evaluate(`document.getElementById('paperStage').getBoundingClientRect().width`);
+  const p0 = await paperW();
+  await click('#zoomIn');
+  await sleep(300);
+  const p1 = await paperW();
+  await click('#zoomReset');
+  check('预览放大 125%：纸张跟着放大', Math.abs(p1 / p0 - 1.25) < 0.02, `${Math.round(p0)} → ${Math.round(p1)}`);
+  await click('#stageTools [data-view="edit"]');
+  await waitFor(() => v.evaluate(`!document.getElementById('editView').hidden && document.getElementById('editCanvas').width > 0`), 10000, '回到编辑 PDF');
+  await settled();
   if (SHOTS) {
     mkdirSync(SHOTS, { recursive: true });
-    await v.evaluate(`document.activeElement?.blur()`);
+    await clickAt(mid(runOf('東京都')));
+    await waitFor(() => v.evaluate(`!!document.getElementById('runDelete')`), 5000, '截图：选中原有文字');
     await v.shot(join(SHOTS, 'edit-pdf.png'));
+    await key('Escape', 'Escape', 27);
   }
 
   // ⑨ 合并：追加 3 页 PDF + 1 张图片；能撤销

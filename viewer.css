@@ -63,7 +63,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .seg input:focus-visible + span { outline: 2px solid var(--accent); }
 
 .stage {
-  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: safe center;
+  position: relative; display: flex; flex-direction: column; align-items: safe center; justify-content: safe center;
   gap: 12px; padding: 16px 20px; background: var(--stage); min-height: 0; overflow: auto;
 }
 .stage.dragging { outline: 3px dashed var(--accent); outline-offset: -12px; }
@@ -71,8 +71,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .paper-stage {
   position: relative; flex: none;
   aspect-ratio: var(--ratio, 1.3);
-  width: min(92%, calc((100vh - 330px) * var(--ratio, 1.3)));
-  max-width: 1100px;
+  width: calc(min(92%, calc((100vh - 330px) * var(--ratio, 1.3))) * var(--zoom, 1));
+  max-width: calc(1100px * var(--zoom, 1));
 }
 .paper-wrap { position: absolute; inset: 0; overflow: hidden; background: #fff; box-shadow: var(--shadow); }
 .paper-wrap canvas.baked { display: block; width: 100%; height: 100%; }
@@ -148,7 +148,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   height: min(calc(100vh - 330px), calc(92vw - 400px) / var(--ratio, 0.7));
 }
 .source-wrap canvas { display: block; width: 100%; height: 100%; }
-.paper-stage.arranging { touch-action: none; }
+.paper-stage.arranging { touch-action: pan-x pan-y; }
 .paper-stage.arranging canvas.baked { visibility: hidden; }
 .paper-stage:not(.arranging) .content-layer { display: none; }
 .content-layer { position: absolute; display: block; }
@@ -192,8 +192,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .crop-info { flex: 1; color: var(--muted); font-size: 13px; }
 
 /* 编辑视图多了工具条和说明，纸张/原页面留出空间 */
-.stage:not([data-view="preview"]) .paper-stage { width: min(92%, calc((100vh - 430px) * var(--ratio, 1.3))); }
-.source-wrap { height: min(calc(100vh - 400px), calc((92vw - 400px) / var(--ratio, 0.7))); }
+.stage:not([data-view="preview"]) .paper-stage { width: calc(min(92%, calc((100vh - 430px) * var(--ratio, 1.3))) * var(--zoom, 1)); }
+.source-wrap { height: calc(min(calc(100vh - 400px), calc((92vw - 400px) / var(--ratio, 0.7))) * var(--zoom, 1)); }
 
 /* 按界面语言选字体：日文用日文字形、中文用中文字形 */
 :root:lang(ja) { font-family: "Yu Gothic UI", "Yu Gothic", Meiryo, "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; }
@@ -202,6 +202,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 
 /* 编辑时选框可能超出纸张：所有控件压在选框上面，点击不会被框截走 */
 .stage-tools, .edit-bar, .edit-hint, .paper-tag, .pager, .message { position: relative; z-index: 5; }
+.pager { position: sticky; bottom: 4px; left: 4px; background: var(--stage); padding: 4px 8px; border-radius: 8px; }
 .message { position: absolute; }
 .edit-layer { z-index: 1; }
 .edit-hint { background: var(--stage); padding: 0 6px; border-radius: 4px; }
@@ -237,12 +238,16 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .thumb-btn:disabled { opacity: 0.35; cursor: default; }
 .add-pages { width: 100%; white-space: normal; text-align: center; }
 .edit-main { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.edit-page {
-  position: relative; flex: none; background: #fff; box-shadow: var(--shadow); touch-action: none; user-select: none;
-  aspect-ratio: var(--ratio, 0.7);
-  height: max(240px, min(calc(100vh - 450px), calc((100vw - 580px) / var(--ratio, 0.7))));
-}
+.edit-scroll { width: 100%; height: max(280px, calc(100vh - 440px)); overflow: auto; display: flex; }
+.edit-page { position: relative; flex: none; margin: auto; background: #fff; box-shadow: var(--shadow); touch-action: pan-x pan-y; user-select: none; }
+.edit-page.drawing, .edit-box { touch-action: none; }
+.edit-page.over-text { cursor: text; }
 .edit-page.drawing { cursor: crosshair; }
+.text-hover, .text-pick { position: absolute; pointer-events: none; border-radius: 2px; }
+.text-hover { outline: 1px dashed #3b82f6; background: rgba(59, 130, 246, 0.08); }
+.text-pick { outline: 2px solid #3b82f6; background: rgba(59, 130, 246, 0.16); }
+.run-label { color: var(--muted); font-size: 13px; }
+.run-text { font-weight: 600; max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .edit-page canvas { display: block; width: 100%; height: 100%; }
 .edit-props {
   position: relative; z-index: 5; width: 100%; max-width: 900px; min-height: 44px;
@@ -268,5 +273,9 @@ input[type="color"] { width: 44px; height: 28px; padding: 0 2px; border: 1px sol
   .thumbs { max-height: none; }
   .thumb-list { flex-direction: row; overflow-x: auto; }
   .thumb { width: 110px; }
-  .edit-page { height: auto; width: 100%; }
+  .edit-scroll { height: 65vh; }
 }
+
+/* 放大缩小 */
+.zoom { display: inline-flex; gap: 4px; margin-left: 14px; }
+#zoomReset { min-width: 56px; font-variant-numeric: tabular-nums; }

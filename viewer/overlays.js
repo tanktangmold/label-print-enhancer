@@ -1,12 +1,12 @@
 // 把编辑对象画到画布上：盖白、图片、文字（可带白底盖住原字）、马赛克；水印画在整张纸上。
 // 输出是整页图像，所以马赛克、盖白之后原来的内容在打印件和下载的 PDF 里都真的没了。
 import { pixelate, wrapLines } from '../core/pixel.js';
-import { turnRect } from '../core/edits.js';
+import { turnRect, TEXT_LINE_HEIGHT as LINE_HEIGHT, TEXT_PAD } from '../core/edits.js';
 import { getImage } from './images.js';
 
 export const FONT_STACK = '"Noto Sans JP","Yu Gothic UI","Yu Gothic",Meiryo,"Microsoft YaHei UI","PingFang SC","Hiragino Sans",sans-serif';
-const LINE_HEIGHT = 1.25;
-const TEXT_PAD = 0.15; // 文字框内边距（相对字号）
+// 改 PDF 原文时跟着原字体走：明朝/宋体类的用衬线字
+export const SERIF_STACK = '"Yu Mincho","YuMincho","Hiragino Mincho ProN","MS Mincho","Noto Serif JP","SimSun","Songti SC",serif';
 
 function fillWhite(ctx, r) {
   ctx.save();
@@ -23,7 +23,7 @@ function drawText(ctx, o, r, scale) {
   ctx.clip();
   const px = o.size * scale;
   const pad = px * TEXT_PAD;
-  ctx.font = `${o.bold ? 'bold ' : ''}${px}px ${FONT_STACK}`;
+  ctx.font = `${o.bold ? 'bold ' : ''}${px}px ${o.serif ? SERIF_STACK : FONT_STACK}`;
   ctx.fillStyle = o.color;
   ctx.textBaseline = 'top';
   const lines = wrapLines(o.text, Math.max(1, r.w - pad * 2), (s) => ctx.measureText(s).width);

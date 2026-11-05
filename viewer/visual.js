@@ -89,7 +89,8 @@ export function createVisualEditor({ getState, applyPatch, onError, editView }) 
   async function enterSelect(token) {
     const { doc, ref, settings, objects } = getState();
     src = await sourceSize(doc, ref, settings);
-    const width = Math.min(1600, Math.round(stage.clientWidth * (window.devicePixelRatio || 1)));
+    const zoom = getState().zoom ?? 1;
+    const width = Math.min(3200, Math.round(Math.min(1600, stage.clientWidth * (window.devicePixelRatio || 1)) * zoom));
     const canvas = await renderRegion(doc, ref, settings, width, null, abort.signal, { objects });
     if (token !== seq) return releaseCanvas(canvas);
     sourceWrap.style.setProperty('--ratio', String(src.w / src.h));
@@ -141,9 +142,10 @@ export function createVisualEditor({ getState, applyPatch, onError, editView }) 
   async function ensureLayer(token) {
     const { doc, ref, settings, objects } = getState();
     const rect = sourceRect(settings, src.w, src.h);
-    const key = JSON.stringify([ref.id, ref.rotate, rect, settings.rotate, settings.mono, settings.threshold, objects]);
+    const zoom = getState().zoom ?? 1;
+    const key = JSON.stringify([ref.id, ref.rotate, rect, settings.rotate, settings.mono, settings.threshold, objects, zoom]);
     if (layer && key === layerKey) return;
-    const width = Math.min(2400, Math.round(stage.clientWidth * (window.devicePixelRatio || 1)));
+    const width = Math.min(3600, Math.round(Math.min(2400, stage.clientWidth * (window.devicePixelRatio || 1)) * zoom));
     const canvas = await renderRegion(doc, ref, settings, width, rect, abort.signal, { objects });
     if (token !== seq) return releaseCanvas(canvas);
     if (layer) {
@@ -202,6 +204,7 @@ export function createVisualEditor({ getState, applyPatch, onError, editView }) 
       box,
       aspectLock: true,
       allowDraw: false,
+      wheelResize: () => (getState().zoom ?? 1) <= 1,
       label: t('mode.arrange'),
       constrain: snapper,
       readout: (b, info) => arrangeReadout(b, info.guides),

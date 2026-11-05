@@ -1,7 +1,12 @@
 // 编辑对象（盖白、马赛克、文字、图片）和水印：数据校验与纯操作。
 // 坐标单位 pt，原点在页面（含旋转后）的左上角。所有函数返回新对象，不改传入的数据。
 
+import { wrapLines } from './pixel.js';
+
 export const OBJECT_TYPES = Object.freeze(['whiteout', 'mosaic', 'text', 'image']);
+export const TEXT_LINE_HEIGHT = 1.25; // 文字行高（相对字号）
+export const TEXT_PAD = 0.15; // 文字框内边距（相对字号）
+const GLYPH_HEIGHT = 1.15; // 最后一行只要装下字身（不算行间距），免得改原文时白底盖到下面的表格线
 // 能「每页同位置」并跟着打印方案保存的类型（文字、图片只对当前文件）
 export const GLOBAL_TYPES = Object.freeze(['whiteout', 'mosaic']);
 export const MAX_GLOBAL_OVERLAYS = 30;
@@ -43,6 +48,7 @@ export function normalizeObject(o) {
         size: num(o.size, 4, 200, 10),
         color: COLOR.test(o.color ?? '') ? o.color.toLowerCase() : '#000000',
         bold: o.bold === true,
+        serif: o.serif === true,
         cover: o.cover !== false,
       });
     case 'image':
@@ -167,4 +173,21 @@ export function turnPageEdits(edits, pageId, turn, page) {
   const list = edits[pageId];
   if (!list?.length) return edits;
   return Object.freeze({ ...edits, [pageId]: turnObjects(list, turn, page) });
+}
+
+// ---------- 文字框大小 ----------
+
+/**
+ * 文字框装下全部文字需要的大小：先往右加宽（到页边为止），再按换行后的行数加高。只变大不变小（盖住的原内容不会露出来）。
+ * measure(s) = 字符串在这个字号/字体下的宽度（pt）；page = 页面尺寸 pt。
+ */
+export function fitTextRect(o, measure, page) {
+  const pad = o.size * TEXT_PAD;
+  const roomW = Math.max(o.w, page.w - o.x);
+  const roomH = Math.max(o.h, page.h - o.y);
+  const widest = Math.max(0, ...String(o.text).split('\n').map((line) => measure(line)));
+  const w = Math.min(roomW, Math.max(o.w, widest + pad * 2 + 1));
+  const lines = Math.max(1, wrapLines(o.text, Math.max(1, w - pad * 2), measure).length);
+  const h = Math.min(roomH, Math.max(o.h, pad + (lines - 1) * o.size * TEXT_LINE_HEIGHT + o.size * GLYPH_HEIGHT));
+  return { w: Math.round(w * 100) / 100, h: Math.round(h * 100) / 100 };
 }
