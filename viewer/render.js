@@ -217,7 +217,7 @@ const nextTick = () => new Promise((resolve) => setTimeout(resolve, 0));
 export async function buildLabelPdf({ doc, settings, objectsFor = () => [], title, onProgress = () => {}, signal }) {
   const pdfDoc = await PDFDocument.create();
   pdfDoc.setTitle(title);
-  pdfDoc.setCreator('Label Print Enhancer');
+  pdfDoc.setCreator('PrintPal');
   const n = doc.pages.length;
   for (let i = 0; i < n; i++) {
     onProgress(i + 1, n);

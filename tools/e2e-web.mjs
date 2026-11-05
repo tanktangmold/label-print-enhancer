@@ -31,7 +31,7 @@ try {
   for (const lang of ['en', 'ja', 'zh']) {
     titles[lang] = await home.evaluate(`(() => { const s = document.getElementById('lang'); s.value = '${lang}'; s.dispatchEvent(new Event('change')); return document.querySelector('h1').textContent; })()`);
   }
-  check('主页三种语言标题都能切换', titles.en.startsWith('Label Print Enhancer') && titles.ja.startsWith('ラベル印刷アシスト') && titles.zh.startsWith('标签打印增强'), JSON.stringify(titles));
+  check('主页三种语言标题都能切换', titles.en.startsWith('PrintPal — edit PDFs') && titles.ja.startsWith('PrintPal — PDFを直して') && titles.zh.startsWith('PrintPal 所见即所印'), JSON.stringify(titles));
   // 截图是懒加载：滚到每张图让它加载
   await home.evaluate(`Promise.all([...document.querySelectorAll('.compare img')].map((img) => { img.scrollIntoView(); return img.decode().catch(() => {}); }))`);
   const imgs = await home.evaluate(`[...document.querySelectorAll('.compare img')].map((img) => img.complete && img.naturalWidth > 0)`);

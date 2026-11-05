@@ -6,7 +6,7 @@ import { normalizeProfiles } from './profiles.js';
 const SETTINGS_KEY = 'settings';
 const BYPASS_KEY = 'bypassOnce';
 const BYPASS_TTL_MS = 60_000;
-const WEB_SETTINGS_KEY = 'label-print-enhancer.settings';
+const WEB_SETTINGS_KEY = 'label-print-enhancer.settings'; // 旧名（改名前就在用），保持不变，已保存的设置不丢
 
 function readWebSettings() {
   try {

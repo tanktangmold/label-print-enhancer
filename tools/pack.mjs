@@ -1,5 +1,5 @@
 /**
- * 打包 Chrome 扩展：npm run pack → dist/label-print-enhancer-v<版本>.zip（GitHub Release 附件）
+ * 打包 Chrome 扩展：npm run pack → dist/printpal-v<版本>.zip（GitHub Release 附件）
  * 只打包扩展运行需要的文件（白名单）。测试、工具、网页版首页、示例 PDF、node_modules 都不进去。
  * 自己写 zip（不依赖第三方）：文件名设 UTF-8 标记。
  */
@@ -9,7 +9,7 @@ import { join, relative, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const TOP = 'label-print-enhancer';
+const TOP = 'printpal';
 
 /** 打包白名单：目录会递归。 */
 export const INCLUDE = Object.freeze([

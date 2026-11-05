@@ -25,7 +25,7 @@ async function takeOver(tabId, url) {
     await chrome.tabs.update(tabId, { url: viewerUrl(url, 'takeover') });
   } catch (err) {
     // 接管失败就让 Chrome 正常打开原 PDF，不影响用户
-    console.error('[标签打印增强] 接管 PDF 失败', url, err);
+    console.error('[PrintPal] 接管 PDF 失败', url, err);
   }
 }
 

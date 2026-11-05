@@ -95,7 +95,7 @@ async function main() {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   doc.setTitle('Sample shipping label (fictitious data)');
-  doc.setCreator('Label Print Enhancer – tools/make-sample.mjs');
+  doc.setCreator('PrintPal – tools/make-sample.mjs');
   const usedText = JSON.stringify(LABELS) + FIXED_TEXT;
   const embed = async (weight) =>
     doc.embedFont(await subsetFont(await fontBytes(weight), usedText, { targetFormat: 'truetype' }), { subset: false });

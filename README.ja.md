@@ -1,11 +1,13 @@
-# ラベル印刷アシスト（Label Print Enhancer）
+# PrintPal（プリントパル）· PDF編集・印刷
 
 [English](README.md) · **日本語** · [中文](README.zh-CN.md)
 
-送り状PDFを「ラベル用紙とまったく同じサイズ」のページに組み直してから、Chrome標準の印刷プレビューに渡すChrome拡張機能とWebアプリです。感熱ラベルプリンターでも一発で正しく印刷できます。
+**見たまま、ぴったり印刷。** 毎日印刷するPDFのためのChrome拡張機能とWebアプリです。文字の削除・修正、墨消し、透かし、ページの結合・並べ替えをしてから、A4から感熱ラベルの送り状まで、どんな用紙にもプレビューのとおり印刷できます。処理はすべてブラウザの中です。
 
-- **オンラインで試す（インストール不要）：** <https://tanktangmold.github.io/label-print-enhancer/>
-- **Chrome拡張機能をダウンロード：** [GitHub Releases](https://github.com/tanktangmold/label-print-enhancer/releases/latest)
+もともとはChromeで送り状が切れる問題を解決するために作りました。各ページを用紙と同じサイズのページに描き直してから、Chrome標準の印刷プレビューに渡します。（旧名「ラベル印刷アシスト」）
+
+- **オンラインで試す（インストール不要）：** <https://tanktangmold.github.io/printpal/>
+- **Chrome拡張機能をダウンロード：** [GitHub Releases](https://github.com/tanktangmold/printpal/releases/latest)
 
 | Chromeでそのまま印刷 | 組み直した後 |
 |---|---|
@@ -38,29 +40,29 @@ Chromeの標準設定をどう組み合わせても、2 は回避できません
 - すべてローカルで処理。PDFがパソコンの外に出ることはありません
 - 日本語・English・中文に対応
 
-![ラベル印刷アシストの画面](docs/images/viewer-ja.png)
+![PrintPalの画面](docs/images/viewer-ja.png)
 
 ## Chrome拡張機能のインストール
 
-1. [Releases](https://github.com/tanktangmold/label-print-enhancer/releases/latest) から `label-print-enhancer-vX.Y.Z.zip` をダウンロードして展開します。
+1. [Releases](https://github.com/tanktangmold/printpal/releases/latest) から `printpal-vX.Y.Z.zip` をダウンロードして展開します。
 2. Chromeで `chrome://extensions` を開き、右上の **デベロッパー モード** をオンにします。
 3. **パッケージ化されていない拡張機能を読み込む** をクリックし、展開したフォルダを選びます。
 4. 必要に応じて、ツールバーに拡張機能のアイコンを固定します。
 
-[オンライン版](https://tanktangmold.github.io/label-print-enhancer/) でもレイアウトとプレビューの機能は同じです。ただし日本郵便のPDFを自動で開くことはできないので、PDFを画面にドロップしてください。
+[オンライン版](https://tanktangmold.github.io/printpal/) でもレイアウトとプレビューの機能は同じです。ただし日本郵便のPDFを自動で開くことはできないので、PDFを画面にドロップしてください。
 
 ## 使い方
 
-- **日本郵便の送り状：** いつも通りWebサイトで送り状PDFを開くと、ラベル印刷アシストで開きます。プレビューを確認して **印刷** をクリックします。
+- **日本郵便の送り状：** いつも通りWebサイトで送り状PDFを開くと、PrintPalで開きます。プレビューを確認して **印刷** をクリックします。
 - **そのほかのPDF：** PDFを開いた状態でツールバーのアイコンをクリックするか、PDFを画面にドロップします。
-- ラベル印刷アシストの画面で `Ctrl+P` を押すと、組み直したラベルを印刷します。`←` / `→` でページを切り替えます。
+- PrintPalの画面で `Ctrl+P` を押すと、組み直したラベルを印刷します。`←` / `→` でページを切り替えます。
 
 Chromeの印刷ダイアログでは、最初に一度だけ次のように選んでください。Chromeが設定を覚えます。
 
 | 項目 | 設定 |
 |---|---|
 | 送信先 | お使いのラベルプリンター（例：Xprinter XP-420B） |
-| 用紙サイズ | ラベル印刷アシストと同じ用紙（例：ゆうパケット 2） |
+| 用紙サイズ | PrintPalと同じ用紙（例：ゆうパケット 2） |
 | 倍率 | **デフォルト**。倍率は調整済みなので変更しないでください。 |
 
 用紙サイズはプリンタードライバーに登録されている必要があります。ない場合は、ドライバーの印刷設定で同じ幅と高さの用紙を追加してください。
@@ -156,8 +158,8 @@ npm run e2e:web    # オンライン版のE2Eテスト（GitHub Pages と同じ�
 npm run e2e:visual # 範囲選択・移動/拡大縮小・中央吸着・印刷設定の保存を実際のマウス操作でテスト
 npm run e2e:profiles # 印刷設定の切り替え、再読み込み後も前回の設定が残るかをテスト
 npm run e2e:edit  # PDF編集（結合・並べ替え・ページ削除・白塗り・モザイク・文字・画像・透かし・元に戻す）をテスト
-npm run pages:serve   # http://127.0.0.1:8799/label-print-enhancer/ でオンライン版をプレビュー
-npm run pack       # リリース用の dist/label-print-enhancer-vX.Y.Z.zip を作成
+npm run pages:serve   # http://127.0.0.1:8799/printpal/ でオンライン版をプレビュー
+npm run pack       # リリース用の dist/printpal-vX.Y.Z.zip を作成
 ```
 
 `node tools/print-preview-check.mjs --pdf samples/sample-label.pdf --lang ja` は別の Chrome for Testing ウィンドウを開きます。元のPDFと組み直したPDFについて、お使いのラベルプリンターで**本物の印刷プレビュー**を表示し、スクリーンショットを保存します。プレビューだけで、実際には印刷しません。E2Eスクリプトは `~/.agent-browser/browsers/chrome-152.0.7977.64/chrome.exe` の Chrome for Testing を使います。別の場所にある場合は環境変数 `CHROME_PATH` か `--chrome <パス>` で指定してください。

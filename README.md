@@ -1,11 +1,13 @@
-# Label Print Enhancer
+# PrintPal — Edit & Print PDFs
 
 **English** · [日本語](README.ja.md) · [中文](README.zh-CN.md)
 
-A Chrome extension and web app that redraws shipping-label PDFs onto a page the exact size of your label stock, then hands them to Chrome's own print preview, so labels print right the first time on a thermal label printer.
+**What you see is what you print.** A Chrome extension and web app for the PDFs you print every day: delete or change text, redact, add a watermark, merge and reorder pages — then print on any paper, from A4 to thermal shipping labels, exactly as the preview shows. Everything runs in your browser.
 
-- **Try it online (nothing to install):** <https://tanktangmold.github.io/label-print-enhancer/>
-- **Download the Chrome extension:** [GitHub Releases](https://github.com/tanktangmold/label-print-enhancer/releases/latest)
+It started as a fix for Chrome cutting off shipping labels: every page is redrawn onto a page the exact size of your paper, then handed to Chrome's own print preview. *(Formerly “Label Print Enhancer”.)*
+
+- **Try it online (nothing to install):** <https://tanktangmold.github.io/printpal/>
+- **Download the Chrome extension:** [GitHub Releases](https://github.com/tanktangmold/printpal/releases/latest)
 
 | Printing directly from Chrome | After re-layout |
 |---|---|
@@ -38,29 +40,29 @@ No combination of Chrome's built-in settings avoids step 2. This tool redraws ev
 - Everything runs locally: PDFs never leave your computer
 - UI in English, 日本語 and 中文
 
-![Label Print Enhancer screenshot](docs/images/viewer-en.png)
+![PrintPal screenshot](docs/images/viewer-en.png)
 
 ## Install the Chrome extension
 
-1. Download `label-print-enhancer-vX.Y.Z.zip` from [Releases](https://github.com/tanktangmold/label-print-enhancer/releases/latest) and unzip it.
+1. Download `printpal-vX.Y.Z.zip` from [Releases](https://github.com/tanktangmold/printpal/releases/latest) and unzip it.
 2. Open `chrome://extensions` and turn on **Developer mode** (top right).
 3. Click **Load unpacked** and select the unzipped folder.
 4. Optional: pin the extension icon to the toolbar.
 
-The [online version](https://tanktangmold.github.io/label-print-enhancer/) has the same layout and preview features. It cannot open Japan Post PDFs automatically; drop the PDF onto the page instead.
+The [online version](https://tanktangmold.github.io/printpal/) has the same layout and preview features. It cannot open Japan Post PDFs automatically; drop the PDF onto the page instead.
 
 ## Usage
 
-- **Japan Post labels:** open the label PDF from the website as usual. The extension opens it in Label Print Enhancer. Check the preview and click **Print**.
+- **Japan Post labels:** open the label PDF from the website as usual. The extension opens it in PrintPal. Check the preview and click **Print**.
 - **Any other PDF:** click the toolbar icon while the PDF is open, or drop a PDF onto the page.
-- `Ctrl+P` on the Label Print Enhancer page prints the re-laid-out labels. `←` / `→` change pages.
+- `Ctrl+P` on the PrintPal page prints the re-laid-out labels. `←` / `→` change pages.
 
 In Chrome's print dialog, choose the following once. Chrome remembers them.
 
 | Setting | Value |
 |---|---|
 | Destination | your label printer (e.g. Xprinter XP-420B) |
-| Paper size | the same paper as in Label Print Enhancer (e.g. ゆうパケット 2) |
+| Paper size | the same paper as in PrintPal (e.g. ゆうパケット 2) |
 | Scale | **Default**. The scale is already applied, so don't change it. |
 
 The paper size must exist in your printer driver. If it doesn't, add it in the driver's printing preferences with the same width and height.
@@ -156,8 +158,8 @@ npm run e2e:web    # web version end-to-end test (local server with the GitHub P
 npm run e2e:visual # visual selection, move/resize, snap-to-center and print profiles with real mouse events
 npm run e2e:profiles # switching profiles, keeping last-used settings across reloads
 npm run e2e:edit  # PDF editing: merge, reorder, delete pages, white-out, mosaic, text, images, watermark, undo
-npm run pages:serve   # preview the web version at http://127.0.0.1:8799/label-print-enhancer/
-npm run pack       # build dist/label-print-enhancer-vX.Y.Z.zip for a release
+npm run pages:serve   # preview the web version at http://127.0.0.1:8799/printpal/
+npm run pack       # build dist/printpal-vX.Y.Z.zip for a release
 ```
 
 `node tools/print-preview-check.mjs --pdf samples/sample-label.pdf --lang en-US` opens a separate Chrome for Testing window, triggers the **real print preview** for the original and re-laid-out PDF with your label printer, and saves screenshots. It only previews and never prints. The e2e scripts expect Chrome for Testing at `~/.agent-browser/browsers/chrome-152.0.7977.64/chrome.exe`; set `CHROME_PATH` or pass `--chrome <path>` to use another one.

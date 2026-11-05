@@ -1,11 +1,11 @@
 // English
 export default Object.freeze({
-  'app.name': 'Label Print Enhancer',
+  'app.name': "PrintPal",
   'lang.label': 'Language',
 
   'doc.none': 'No file open',
   'doc.loaded': '{name}.pdf · {n} pages',
-  'doc.title': '{name} - Label Print Enhancer',
+  'doc.title': "{name} - PrintPal",
   'btn.reset': 'Reset to defaults',
 
   'sec.source': 'Source',
@@ -223,8 +223,8 @@ export default Object.freeze({
   'wm.opacity': "Opacity",
   'wm.color': "Color",
   'wm.hint': "One in the middle of every sheet; drawn as outlined text in black & white mode. Saved with the print profile.",
-  'site.title': 'Label Print Enhancer — stop Chrome from cutting off your shipping labels',
-  'site.lead': "Redraws shipping-label PDFs onto a page the exact size of your label stock, then hands them to Chrome's own print preview. No paid PDF tools — pick your printer and paper size and it prints right the first time.",
+  'site.title': "PrintPal — edit PDFs and print exactly what you see",
+  'site.lead': "Open a PDF and delete or change text, redact, add a watermark, merge or remove pages, then print it on any paper — shipping labels, label stock or A4 — exactly as the preview shows. Free, open source, and your PDF never leaves your browser.",
   'site.cta.try': 'Try it online',
   'site.cta.install': 'Download the extension',
   'site.problem.title': 'The problem',
@@ -245,7 +245,7 @@ export default Object.freeze({
   'site.feat.4': "Print profiles: save settings under a name and switch in one click; your last-used settings are kept for next time",
   'site.feat.5': "Pure black & white output for thermal printers; everything runs locally, nothing is uploaded",
   'site.feat.6': 'UI in English, 日本語 and 中文',
-  'site.feat.7': "Edit before printing: merge PDFs and images, reorder, rotate and delete pages; add text, white-out, mosaic, images and a watermark — the preview is what prints",
+  'site.feat.7': "Edit before printing: click existing PDF text to delete or change it; merge PDFs and images, reorder, rotate and delete pages; add text, white-out, mosaic, images and a watermark",
   'site.install.title': 'Install the Chrome extension',
   'site.install.1': 'Download the zip from GitHub Releases and unzip it',
   'site.install.2': 'Open chrome://extensions and turn on Developer mode (top right)',

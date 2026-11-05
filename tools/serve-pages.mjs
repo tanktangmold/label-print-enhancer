@@ -1,4 +1,4 @@
-// 本地预览在线版：npm run pages:serve → http://127.0.0.1:8799/label-print-enhancer/
+// 本地预览在线版：npm run pages:serve → http://127.0.0.1:8799/printpal/
 // 用和 GitHub Pages 一样的子路径，提前发现相对路径/service worker 作用域问题。
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
@@ -6,7 +6,7 @@ import { extname, join, normalize, sep } from 'node:path';
 import { build, OUT } from './build-pages.mjs';
 
 export const PORT = Number(process.env.PAGES_PORT || 8799);
-export const BASE = '/label-print-enhancer/';
+export const BASE = '/printpal/';
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.png': 'image/png', '.pdf': 'application/pdf',

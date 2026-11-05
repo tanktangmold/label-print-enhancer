@@ -1,11 +1,11 @@
 // 简体中文
 export default Object.freeze({
-  'app.name': '标签打印增强',
+  'app.name': "PrintPal 所见即所印",
   'lang.label': '界面语言',
 
   'doc.none': '未打开文件',
   'doc.loaded': '{name}.pdf · {n} 页',
-  'doc.title': '{name} - 标签打印增强',
+  'doc.title': "{name} - PrintPal",
   'btn.reset': '恢复默认设置',
 
   'sec.source': '源文件',
@@ -223,8 +223,8 @@ export default Object.freeze({
   'wm.opacity': "浓度",
   'wm.color': "颜色",
   'wm.hint': "每张纸中间打一个；黑白打印时画成空心字。跟着打印方案保存。",
-  'site.title': '标签打印增强 — Chrome 打印快递面单不再被切',
-  'site.lead': '把送り状等快递面单 PDF 重新排成标签纸大小，再交给 Chrome 自带的打印预览。不用付费 PDF 工具，选好打印机和纸张就能一次打对。',
+  'site.title': "PrintPal 所见即所印 — 在 Chrome 里改好 PDF，一次打对",
+  'site.lead': "打开 PDF 就能删字、改字、打码、加水印、合并和删页，再按任意纸张打印——快递面单、标签纸、A4 都行，预览什么样就打出什么样。免费开源，PDF 只在你的浏览器里处理。",
   'site.cta.try': '在线试用',
   'site.cta.install': '下载扩展',
   'site.problem.title': '问题',
@@ -245,7 +245,7 @@ export default Object.freeze({
   'site.feat.4': "打印方案：常用设置起名保存、一键切换；上次用的设置下次自动沿用",
   'site.feat.5': "为热敏打印机做黑白二值化；PDF 只在本机处理，不上传",
   'site.feat.6': '中文 / English / 日本語 界面',
-  'site.feat.7': "打印前编辑：合并多个 PDF / 图片，拖动排序、旋转、删页；加文字、盖白、马赛克、图片、水印，预览即打印效果",
+  'site.feat.7': "打印前编辑：点 PDF 原有文字删除或修改；合并 PDF / 图片，排序、旋转、删页；加文字、盖白、马赛克、图片、水印",
   'site.install.title': '安装 Chrome 扩展',
   'site.install.1': '从 GitHub Releases 下载 zip 并解压',
   'site.install.2': 'Chrome 打开 chrome://extensions，打开右上角「开发者模式」',

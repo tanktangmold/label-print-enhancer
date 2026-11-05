@@ -1,11 +1,11 @@
 {
   "appName": {
-    "message": "Label Print Enhancer"
+    "message": "PrintPal — Edit & Print PDFs"
   },
   "appDesc": {
-    "message": "Redraws shipping-label PDFs (Japan Post, Yamato, Sagawa, 4×6…) onto your label size so Chrome's print preview prints them right. Visual area selection and named print profiles."
+    "message": "Edit PDFs in Chrome (change or delete text, redact, watermark, merge pages) and print exactly on any paper or label. Runs locally."
   },
   "actionTitle": {
-    "message": "Open the current PDF in Label Print Enhancer"
+    "message": "Open the current PDF in PrintPal"
   }
 }

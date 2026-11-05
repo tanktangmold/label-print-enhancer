@@ -1,11 +1,11 @@
 // 日本語
 export default Object.freeze({
-  'app.name': 'ラベル印刷アシスト',
+  'app.name': "PrintPal",
   'lang.label': '表示言語',
 
   'doc.none': 'ファイル未選択',
   'doc.loaded': '{name}.pdf · {n} ページ',
-  'doc.title': '{name} - ラベル印刷アシスト',
+  'doc.title': "{name} - PrintPal",
   'btn.reset': '初期設定に戻す',
 
   'sec.source': '元ファイル',
@@ -223,8 +223,8 @@ export default Object.freeze({
   'wm.opacity': "濃さ",
   'wm.color': "色",
   'wm.hint': "用紙ごとに中央へ1つ入れます。白黒印刷では中抜き文字になります。印刷設定と一緒に保存されます。",
-  'site.title': 'ラベル印刷アシスト — Chromeで送り状が切れる問題を解決',
-  'site.lead': '送り状などのPDFをラベル用紙と同じサイズのページに組み直してから、Chrome標準の印刷プレビューに渡します。有料のPDFソフトは不要。プリンターと用紙を選ぶだけで一発で正しく印刷できます。',
+  'site.title': "PrintPal — PDFを直して、見たままぴったり印刷",
+  'site.lead': "PDFを開いて、文字の削除・修正、墨消し、透かし、結合やページ削除をしたら、送り状・ラベル用紙・A4など好きな用紙にプレビューのとおり印刷できます。無料・オープンソースで、PDFはブラウザの外に出ません。",
   'site.cta.try': 'オンラインで試す',
   'site.cta.install': '拡張機能をダウンロード',
   'site.problem.title': '問題',
@@ -245,7 +245,7 @@ export default Object.freeze({
   'site.feat.4': "印刷設定に名前を付けて保存、ワンクリックで切り替え。前回使った設定は次回もそのまま",
   'site.feat.5': "感熱プリンター向けの白黒2値化。すべてローカルで処理し、アップロードしません",
   'site.feat.6': '日本語・English・中文に対応',
-  'site.feat.7': "印刷前に編集：PDF・画像の結合、並べ替え・回転・ページ削除。文字・白塗り・モザイク・画像・透かしを追加（プレビューのとおりに印刷）",
+  'site.feat.7': "印刷前に編集：PDFにもともとある文字をクリックで削除・修正。PDF・画像の結合、並べ替え・回転・ページ削除。文字・白塗り・モザイク・画像・透かしを追加",
   'site.install.title': 'Chrome拡張機能のインストール',
   'site.install.1': 'GitHub Releases から zip をダウンロードして展開',
   'site.install.2': 'Chromeで chrome://extensions を開き、右上の「デベロッパー モード」をオン',

@@ -1,11 +1,11 @@
 {
   "appName": {
-    "message": "标签打印增强"
+    "message": "PrintPal 所见即所印 · PDF 编辑打印"
   },
   "appDesc": {
-    "message": "把快递面单 PDF（日本邮政、雅玛多、佐川、4×6 等）重新排成标签纸大小，让 Chrome 打印预览一次就对。支持鼠标框选打印区域和保存打印方案。"
+    "message": "在 Chrome 里直接改 PDF（删字改字、打码、水印、合并删页），再按快递面单、标签或任意纸张一次打对。全部在本机处理。"
   },
   "actionTitle": {
-    "message": "用标签打印增强打开当前 PDF"
+    "message": "用 PrintPal 打开当前 PDF"
   }
 }

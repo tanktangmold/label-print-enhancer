@@ -53,7 +53,7 @@ async function attach(targetId) {
 async function findExtension() {
   for (const t of (await targets()).filter((x) => x.type === 'service_worker' && x.url.endsWith('/background.js'))) {
     const sid = await attach(t.targetId);
-    if ((await evaluate(sid, "(chrome.runtime.getManifest().homepage_url || '').endsWith('/label-print-enhancer')")) === true) return new URL(t.url).host;
+    if ((await evaluate(sid, "(chrome.runtime.getManifest().homepage_url || '').endsWith('/printpal')")) === true) return new URL(t.url).host;
   }
   throw new Error('没找到扩展');
 }

@@ -106,7 +106,7 @@ async function main() {
       const { targetInfos } = await cdp.send('Target.getTargets');
       for (const t of targetInfos.filter((x) => x.type === 'service_worker' && x.url.endsWith('/background.js'))) {
         const { sessionId } = await cdp.send('Target.attachToTarget', { targetId: t.targetId, flatten: true });
-        const r = await cdp.send('Runtime.evaluate', { expression: "(chrome.runtime.getManifest().homepage_url || '').endsWith('/label-print-enhancer')", returnByValue: true }, sessionId);
+        const r = await cdp.send('Runtime.evaluate', { expression: "(chrome.runtime.getManifest().homepage_url || '').endsWith('/printpal')", returnByValue: true }, sessionId);
         if (r.result?.value === true) {
           await cdp.send('Runtime.enable', {}, sessionId); // 后台 service worker 的报错也收集
           await cdp.send('Log.enable', {}, sessionId);

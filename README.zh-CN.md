@@ -1,11 +1,13 @@
-# 标签打印增强（Label Print Enhancer）
+# PrintPal 所见即所印 · PDF 编辑打印
 
 [English](README.md) · [日本語](README.ja.md) · **中文**
 
-这是一个 Chrome 扩展，也有网页版。它先把快递面单 PDF 重新排到「和标签纸一样大」的页面上，再交给 Chrome 自带的打印预览，用热敏标签机也能一次打对。
+**所见即所印。** 这是一个 Chrome 扩展，也有网页版，专门对付每天要打印的 PDF：删字改字、打码、加水印、合并和调整页面，然后按任意纸张——从 A4 到热敏快递面单——照着预览一次打对。全部在你的浏览器里处理。
 
-- **在线试用（不用安装）：** <https://tanktangmold.github.io/label-print-enhancer/>
-- **下载 Chrome 扩展：** [GitHub Releases](https://github.com/tanktangmold/label-print-enhancer/releases/latest)
+它最早是为了解决 Chrome 打印快递面单被切掉的问题：先把每一页画到和纸张一样大的页面上，再交给 Chrome 自带的打印预览。（原名「标签打印增强」）
+
+- **在线试用（不用安装）：** <https://tanktangmold.github.io/printpal/>
+- **下载 Chrome 扩展：** [GitHub Releases](https://github.com/tanktangmold/printpal/releases/latest)
 
 | 直接用 Chrome 打印 | 排版后 |
 |---|---|
@@ -38,29 +40,29 @@ Chrome 自带的选项怎么组合都绕不过第 2 步。本工具把每一页�
 - 全部在本机处理，PDF 不会离开你的电脑
 - 中文 / English / 日本語 界面
 
-![标签打印增强界面](docs/images/viewer-zh.png)
+![PrintPal界面](docs/images/viewer-zh.png)
 
 ## 安装 Chrome 扩展
 
-1. 从 [Releases](https://github.com/tanktangmold/label-print-enhancer/releases/latest) 下载 `label-print-enhancer-vX.Y.Z.zip` 并解压。
+1. 从 [Releases](https://github.com/tanktangmold/printpal/releases/latest) 下载 `printpal-vX.Y.Z.zip` 并解压。
 2. Chrome 打开 `chrome://extensions`，打开右上角「**开发者模式**」。
 3. 点「**加载已解压的扩展程序**」，选择解压出的文件夹。
 4. 可以把扩展图标固定到工具栏，方便以后用。
 
-[在线版](https://tanktangmold.github.io/label-print-enhancer/)的排版和预览功能一样，只是不能自动接管日本邮政的 PDF，需要把 PDF 拖进页面。
+[在线版](https://tanktangmold.github.io/printpal/)的排版和预览功能一样，只是不能自动接管日本邮政的 PDF，需要把 PDF 拖进页面。
 
 ## 使用
 
-- **日本邮政送り状：** 照常在网站上打开送り状 PDF，会自动用「标签打印增强」打开。看一眼预览，点「**打印**」。
+- **日本邮政送り状：** 照常在网站上打开送り状 PDF，会自动用「PrintPal」打开。看一眼预览，点「**打印**」。
 - **其他 PDF：** 打开 PDF 后点工具栏图标，或把 PDF 拖进页面。
-- 在「标签打印增强」页面按 `Ctrl+P` 打印的是排版后的标签；`←` / `→` 翻页。
+- 在「PrintPal」页面按 `Ctrl+P` 打印的是排版后的标签；`←` / `→` 翻页。
 
 Chrome 打印对话框第一次这样选，之后 Chrome 会记住：
 
 | 项目 | 选择 |
 |---|---|
 | 目标打印机 | 你的标签打印机（如 Xprinter XP-420B） |
-| 纸张尺寸 | 和「标签打印增强」里一样的纸张（如 ゆうパケット 2） |
+| 纸张尺寸 | 和「PrintPal」里一样的纸张（如 ゆうパケット 2） |
 | 缩放 | **默认**。比例已经排好了，不要再改 |
 
 打印机驱动里必须有这个纸张尺寸。如果没有，在驱动的「打印首选项」里按同样的宽高新建一个。
@@ -156,8 +158,8 @@ npm run e2e:web    # 在线版端到端测试（本地服务，路径和 GitHub 
 npm run e2e:visual # 用真实鼠标事件测试框选、拖动缩放、居中吸附、打印方案
 npm run e2e:profiles # 测试方案切换、刷新后沿用上次的设置
 npm run e2e:edit  # 测试编辑 PDF：合并、排序、删页、盖白、马赛克、文字、图片、水印、撤销
-npm run pages:serve   # 在 http://127.0.0.1:8799/label-print-enhancer/ 预览在线版
-npm run pack       # 生成发布用的 dist/label-print-enhancer-vX.Y.Z.zip
+npm run pages:serve   # 在 http://127.0.0.1:8799/printpal/ 预览在线版
+npm run pack       # 生成发布用的 dist/printpal-vX.Y.Z.zip
 ```
 
 `node tools/print-preview-check.mjs --pdf samples/sample-label.pdf --lang zh-CN` 会另开一个 Chrome for Testing 窗口，用你的标签打印机对「原 PDF」和「排版后」各弹一次**真的打印预览**并截图。只看预览，不会真的打印。端到端脚本默认使用 `~/.agent-browser/browsers/chrome-152.0.7977.64/chrome.exe` 的 Chrome for Testing，在别处可以用环境变量 `CHROME_PATH` 或 `--chrome <路径>` 指定。
